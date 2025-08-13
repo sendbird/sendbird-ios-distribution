@@ -20,18 +20,22 @@ extension Color {
     #if os(watchOS)
       self = dark()
     #elseif canImport(UIKit)
-      self.init(
-        uiColor: .init { traitCollection in
-          switch traitCollection.userInterfaceStyle {
-          case .unspecified, .light:
-            return UIColor(light())
-          case .dark:
-            return UIColor(dark())
-          @unknown default:
-            return UIColor(light())
-          }
-        }
-      )
+      if #available(iOS 15.0, *) {
+          self.init(
+            uiColor: .init { traitCollection in
+                switch traitCollection.userInterfaceStyle {
+                case .unspecified, .light:
+                    return UIColor(light())
+                case .dark:
+                    return UIColor(dark())
+                @unknown default:
+                    return UIColor(light())
+                }
+            }
+          )
+      } else {
+          self = light()
+      }
     #elseif canImport(AppKit)
       self.init(
         nsColor: .init(name: nil) { appearance in

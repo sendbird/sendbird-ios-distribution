@@ -10,7 +10,15 @@ public struct BackgroundColor: TextStyle {
     self.backgroundColor = backgroundColor
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
-    attributes.backgroundColor = self.backgroundColor
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
+    #if canImport(UIKit)
+    if let color = self.backgroundColor {
+      attributes.backgroundColor = UIColor(color)
+    }
+    #elseif canImport(AppKit)
+    if let color = self.backgroundColor {
+      attributes.backgroundColor = NSColor(color)
+    }
+    #endif
   }
 }

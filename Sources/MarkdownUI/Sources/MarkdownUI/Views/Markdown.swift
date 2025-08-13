@@ -212,8 +212,8 @@ public struct Markdown: View {
   public var body: some View {
     TextStyleAttributesReader { attributes in
       BlockSequence(self.blocks)
-        .foregroundColor(attributes.foregroundColor)
-        .background(attributes.backgroundColor)
+        .foregroundColor(attributes.swiftUIForegroundColor)
+        .background(attributes.swiftUIBackgroundColor)
         .modifier(ScaledFontSizeModifier(attributes.fontProperties?.size))
     }
     .textStyle(self.text)

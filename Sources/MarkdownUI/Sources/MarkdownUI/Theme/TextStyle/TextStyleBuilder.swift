@@ -47,7 +47,7 @@ import Foundation
     case first(First)
     case second(Second)
 
-    public func _collectAttributes(in attributes: inout AttributeContainer) {
+    public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
       switch self {
       case .first(let first):
         first._collectAttributes(in: &attributes)
@@ -66,7 +66,7 @@ import Foundation
       self.s1 = s1
     }
 
-    func _collectAttributes(in attributes: inout AttributeContainer) {
+    func _collectAttributes(in attributes: inout CompatAttributeContainer) {
       s0._collectAttributes(in: &attributes)
       s1._collectAttributes(in: &attributes)
     }
@@ -74,7 +74,7 @@ import Foundation
 }
 
 extension Optional: TextStyle where Wrapped: TextStyle {
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     self?._collectAttributes(in: &attributes)
   }
 }

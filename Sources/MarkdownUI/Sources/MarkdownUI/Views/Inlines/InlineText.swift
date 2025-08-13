@@ -31,7 +31,7 @@ struct InlineText: View {
         attributes: attributes
       )
     }
-    .task(id: self.inlines) {
+    .compatTask(id: self.inlines) {
       self.inlineImages = (try? await self.loadInlineImages()) ?? [:]
     }
   }

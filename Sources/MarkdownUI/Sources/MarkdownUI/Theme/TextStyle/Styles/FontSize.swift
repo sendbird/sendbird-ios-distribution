@@ -21,7 +21,7 @@ public struct FontSize: TextStyle {
     self.size = .points(size)
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     switch self.size {
     case .points(let value):
       attributes.fontProperties?.size = value

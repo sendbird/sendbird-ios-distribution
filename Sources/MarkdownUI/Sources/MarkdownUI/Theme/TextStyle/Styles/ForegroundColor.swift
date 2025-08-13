@@ -10,7 +10,15 @@ public struct ForegroundColor: TextStyle {
     self.foregroundColor = foregroundColor
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
-    attributes.foregroundColor = self.foregroundColor
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
+    #if canImport(UIKit)
+    if let color = self.foregroundColor {
+      attributes.foregroundColor = UIColor(color)
+    }
+    #elseif canImport(AppKit)
+    if let color = self.foregroundColor {
+      attributes.foregroundColor = NSColor(color)
+    }
+    #endif
   }
 }

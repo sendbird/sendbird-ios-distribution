@@ -10,7 +10,7 @@ public struct FontCapsVariant: TextStyle {
     self.capsVariant = capsVariant
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.fontProperties?.capsVariant = self.capsVariant
   }
 }

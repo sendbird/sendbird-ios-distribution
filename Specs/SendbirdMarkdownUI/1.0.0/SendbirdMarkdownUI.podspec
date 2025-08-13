@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
     :tag => "SendbirdMarkdownUI-v#{s.version}"
   }
   
-  s.ios.deployment_target = '15.0'
+  s.ios.deployment_target = '14.0'
   s.swift_version = '5.7'
   s.module_name = 'MarkdownUI'
   

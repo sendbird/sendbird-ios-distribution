@@ -3,9 +3,9 @@ import SwiftUI
 struct TextStyleAttributesReader<Content: View>: View {
   @Environment(\.textStyle) private var textStyle
 
-  private let content: (AttributeContainer) -> Content
+  private let content: (CompatAttributeContainer) -> Content
 
-  init(@ViewBuilder content: @escaping (_ attributes: AttributeContainer) -> Content) {
+  init(@ViewBuilder content: @escaping (_ attributes: CompatAttributeContainer) -> Content) {
     self.content = content
   }
 
@@ -13,8 +13,8 @@ struct TextStyleAttributesReader<Content: View>: View {
     self.content(self.attributes)
   }
 
-  private var attributes: AttributeContainer {
-    var attributes = AttributeContainer()
+  private var attributes: CompatAttributeContainer {
+    var attributes = CompatAttributeContainer()
     self.textStyle._collectAttributes(in: &attributes)
     return attributes
   }

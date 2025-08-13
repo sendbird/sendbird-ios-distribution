@@ -10,7 +10,7 @@ public struct FontDigitVariant: TextStyle {
     self.digitVariant = digitVariant
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.fontProperties?.digitVariant = self.digitVariant
   }
 }

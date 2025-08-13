@@ -16,25 +16,25 @@ extension Font {
     case .normal:
       break  // do nothing
     case .monospaced:
-      font = font.monospaced()
+      font = font.compatMonospaced()
     }
 
     switch fontProperties.capsVariant {
     case .normal:
       break  // do nothing
     case .smallCaps:
-      font = font.smallCaps()
+      font = font.compatSmallCaps()
     case .lowercaseSmallCaps:
-      font = font.lowercaseSmallCaps()
+      font = font.compatLowercaseSmallCaps()
     case .uppercaseSmallCaps:
-      font = font.uppercaseSmallCaps()
+      font = font.compatUppercaseSmallCaps()
     }
 
     switch fontProperties.digitVariant {
     case .normal:
       break  // do nothing
     case .monospaced:
-      font = font.monospacedDigit()
+      font = font.compatMonospacedDigit()
     }
 
     if fontProperties.weight != .regular {

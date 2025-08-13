@@ -10,7 +10,7 @@ public struct TextTracking: TextStyle {
     self.tracking = tracking
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.tracking = self.tracking
   }
 }

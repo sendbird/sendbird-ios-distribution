@@ -2,11 +2,11 @@ import SwiftUI
 
 extension View {
   func readWidth(column: Int) -> some View {
-    self.background(
+    self.compatBackground {
       GeometryReader { proxy in
         Color.clear.preference(key: ColumnWidthPreference.self, value: [column: proxy.size.width])
       }
-    )
+    }
   }
 
   func onColumnWidthChange(perform action: @escaping ([Int: CGFloat]) -> Void) -> some View {

@@ -12,28 +12,33 @@ Pod::Spec.new do |s|
     :tag => "SendbirdMarkdownUI-v#{s.version}"
   }
   
-  s.ios.deployment_target = '15.0'
+  s.ios.deployment_target = '14.0'
   s.swift_version = '5.7'
   s.module_name = 'MarkdownUI'
   
   # Main MarkdownUI sources
   s.source_files = [
     'Sources/MarkdownUI/Sources/**/*.swift',
-    'Sources/MarkdownUI/ThirdParty/cmark-gfm/**/*.{c,h}',
-    'Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/**/*.{c,h}',
-    'Sources/MarkdownUI/ThirdParty/**/module.modulemap'
+    'Sources/MarkdownUI/ThirdParty/cmark-gfm/**/*.{c,h,inc}',
+    'Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/**/*.{c,h}'
   ]
   
-  # Public headers for C code
-  s.public_header_files = [
+  # C headers and include files should be private to avoid umbrella header conflicts
+  s.private_header_files = [
     'Sources/MarkdownUI/ThirdParty/cmark-gfm/**/*.h',
-    'Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/**/*.h'
+    'Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/**/*.h',
+    'Sources/MarkdownUI/ThirdParty/cmark-gfm/**/*.inc'
   ]
   
   # Exclude CMake and other build files
   s.exclude_files = [
     'Sources/MarkdownUI/ThirdParty/**/CMakeLists.txt',
     'Sources/MarkdownUI/ThirdParty/**/*.re'
+  ]
+  
+  # Preserve modulemap files for C modules
+  s.preserve_paths = [
+    'Sources/MarkdownUI/ThirdParty/**/module.modulemap'
   ]
   
   # Frameworks

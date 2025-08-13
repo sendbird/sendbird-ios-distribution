@@ -113,7 +113,7 @@ public struct Theme: Sendable {
   public var strong: TextStyle = FontWeight(.semibold)
 
   /// The strikethrough style.
-  public var strikethrough: TextStyle = StrikethroughStyle(.single)
+  public var strikethrough: TextStyle = StrikethroughStyle(CompatLineStyle.single)
 
   /// The link style.
   public var link: TextStyle = EmptyTextStyle()
@@ -460,8 +460,8 @@ extension Theme {
 extension Theme {
   /// The text background color of the theme extracted from the ``Theme/text`` style.
   public var textBackgroundColor: Color? {
-    var attributes = AttributeContainer()
+    var attributes = CompatAttributeContainer()
     self.text._collectAttributes(in: &attributes)
-    return attributes.backgroundColor
+    return attributes.swiftUIBackgroundColor
   }
 }

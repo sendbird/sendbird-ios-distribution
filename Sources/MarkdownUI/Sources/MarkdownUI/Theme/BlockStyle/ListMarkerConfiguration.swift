@@ -65,7 +65,7 @@ extension BlockStyle where Configuration == ListMarkerConfiguration {
   public static func decimal(minWidth: RelativeSize, alignment: Alignment = .center) -> Self {
     BlockStyle { configuration in
       Text("\(configuration.itemNumber).")
-        .monospacedDigit()
+        .compatMonospacedDigit()
         .relativeFrame(minWidth: minWidth, alignment: alignment)
     }
   }

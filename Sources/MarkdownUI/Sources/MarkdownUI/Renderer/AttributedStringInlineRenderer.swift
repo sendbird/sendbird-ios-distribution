@@ -5,8 +5,8 @@ extension InlineNode {
     baseURL: URL?,
     textStyles: InlineTextStyles,
     softBreakMode: SoftBreak.Mode,
-    attributes: AttributeContainer
-  ) -> AttributedString {
+    attributes: CompatAttributeContainer
+  ) -> CompatAttributedString {
     var renderer = AttributedStringInlineRenderer(
       baseURL: baseURL,
       textStyles: textStyles,
@@ -19,19 +19,19 @@ extension InlineNode {
 }
 
 private struct AttributedStringInlineRenderer {
-  var result = AttributedString()
+  var result = CompatAttributedString("")
 
   private let baseURL: URL?
   private let textStyles: InlineTextStyles
   private let softBreakMode: SoftBreak.Mode
-  private var attributes: AttributeContainer
+  private var attributes: CompatAttributeContainer
   private var shouldSkipNextWhitespace = false
 
   init(
     baseURL: URL?,
     textStyles: InlineTextStyles,
     softBreakMode: SoftBreak.Mode,
-    attributes: AttributeContainer
+    attributes: CompatAttributeContainer
   ) {
     self.baseURL = baseURL
     self.textStyles = textStyles
@@ -72,7 +72,7 @@ private struct AttributedStringInlineRenderer {
       text = text.replacingOccurrences(of: "^\\s+", with: "", options: .regularExpression)
     }
 
-    self.result += .init(text, attributes: self.attributes)
+    self.result += CompatAttributedString(text, attributes: self.attributes)
   }
 
   private mutating func renderSoftBreak() {
@@ -80,18 +80,18 @@ private struct AttributedStringInlineRenderer {
     case .space where self.shouldSkipNextWhitespace:
       self.shouldSkipNextWhitespace = false
     case .space:
-      self.result += .init(" ", attributes: self.attributes)
+      self.result += CompatAttributedString(" ", attributes: self.attributes)
     case .lineBreak:
       self.renderLineBreak()
     }
   }
 
   private mutating func renderLineBreak() {
-    self.result += .init("\n", attributes: self.attributes)
+    self.result += CompatAttributedString("\n", attributes: self.attributes)
   }
 
   private mutating func renderCode(_ code: String) {
-    self.result += .init(code, attributes: self.textStyles.code.mergingAttributes(self.attributes))
+    self.result += CompatAttributedString(code, attributes: self.textStyles.code.mergingAttributes(self.attributes))
   }
 
   private mutating func renderHTML(_ html: String) {
@@ -152,12 +152,12 @@ private struct AttributedStringInlineRenderer {
   }
 
   private mutating func renderImage(source: String, children: [InlineNode]) {
-    // AttributedString does not support images
+    // CompatAttributedString does not support images
   }
 }
 
 extension TextStyle {
-  fileprivate func mergingAttributes(_ attributes: AttributeContainer) -> AttributeContainer {
+  fileprivate func mergingAttributes(_ attributes: CompatAttributeContainer) -> CompatAttributeContainer {
     var newAttributes = attributes
     self._collectAttributes(in: &newAttributes)
     return newAttributes

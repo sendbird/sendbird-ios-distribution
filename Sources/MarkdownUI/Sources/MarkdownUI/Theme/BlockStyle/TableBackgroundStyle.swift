@@ -28,14 +28,14 @@ import SwiftUI
 ///
 /// ![](CustomTableBackground)
 public struct TableBackgroundStyle {
-  let background: (_ row: Int, _ column: Int) -> AnyShapeStyle
+  let background: (_ row: Int, _ column: Int) -> CompatAnyShapeStyle
 
   /// Creates a table background style that customizes table backgrounds by applying a given closure
   /// to the background of each cell.
   /// - Parameter background: A closure that returns a shape style for a given table cell location.
   public init<S: ShapeStyle>(background: @escaping (_ row: Int, _ column: Int) -> S) {
     self.background = { row, column in
-      AnyShapeStyle(background(row, column))
+      CompatAnyShapeStyle(background(row, column))
     }
   }
 }
