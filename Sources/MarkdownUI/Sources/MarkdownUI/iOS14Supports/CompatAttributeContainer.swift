@@ -3,6 +3,8 @@
 //  swift-markdown-ui
 //
 //  Created by Tez Park on 8/11/25.
+
+@_weakLinked import _Concurrency
 //
 
 import Foundation

@@ -1,3 +1,4 @@
+@_weakLinked import _Concurrency
 import SwiftUI
 
 struct TaskModifier<T: Equatable>: ViewModifier {
