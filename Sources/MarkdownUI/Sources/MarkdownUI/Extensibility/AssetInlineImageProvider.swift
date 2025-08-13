@@ -1,3 +1,4 @@
+@_weakLinked import _Concurrency
 import SwiftUI
 
 /// An inline image provider that loads images from resources located in an app or a module.

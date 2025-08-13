@@ -1,3 +1,4 @@
+@_weakLinked import _Concurrency
 import CoreGraphics
 import Foundation
 import ImageIO

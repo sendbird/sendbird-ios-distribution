@@ -1,3 +1,4 @@
+@_weakLinked import _Concurrency
 import SwiftUI
 
 /// A type that loads images that are displayed within a line of text.

@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   
   s.ios.deployment_target = '14.0'
   s.swift_version = '5.7'
-  s.module_name = 'NetworkImage'
+  s.module_name = 'SendbirdNetworkImage'
   s.source_files = 'Sources/NetworkImage/Sources/**/*.swift'
   
   s.frameworks = 'SwiftUI', 'Combine'

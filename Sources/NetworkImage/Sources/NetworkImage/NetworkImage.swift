@@ -1,3 +1,4 @@
+@_weakLinked import _Concurrency
 import SwiftUI
 
 /// A view that displays an image located at a given URL.
