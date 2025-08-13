@@ -59,4 +59,41 @@ import SwiftUI
 /// ![](CustomBlockquote)
 public protocol TextStyle {
   func _collectAttributes(in attributes: inout CompatAttributeContainer)
+  
+  #if canImport(SwiftUI) && compiler(>=5.5)
+  @available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *)
+  func _collectAttributes(in attributes: inout AttributeContainer)
+  #endif
+}
+
+// 기본 구현 제공
+extension TextStyle {
+  #if canImport(SwiftUI) && compiler(>=5.5)
+  @available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *)
+  public func _collectAttributes(in attributes: inout AttributeContainer) {
+    // iOS 15+에서는 CompatAttributeContainer로 변환하여 처리
+    var compatAttributes = CompatAttributeContainer()
+    
+    // AttributeContainer의 기존 속성을 CompatAttributeContainer로 복사
+    if let fontProperties = attributes[FontPropertiesAttribute.self] {
+      compatAttributes.fontProperties = fontProperties
+    }
+    
+    // TextStyle 적용
+    self._collectAttributes(in: &compatAttributes)
+    
+    // 결과를 다시 AttributeContainer로 복사
+    if let fontProperties = compatAttributes.fontProperties {
+      attributes[FontPropertiesAttribute.self] = fontProperties
+    }
+    
+    // SwiftUI 속성 복사
+    if let foregroundColor = compatAttributes.swiftUIForegroundColor {
+      attributes.swiftUI.foregroundColor = foregroundColor
+    }
+    if let backgroundColor = compatAttributes.swiftUIBackgroundColor {
+      attributes.swiftUI.backgroundColor = backgroundColor
+    }
+  }
+  #endif
 }
