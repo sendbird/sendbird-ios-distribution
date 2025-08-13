@@ -15,8 +15,7 @@ struct TableBackgroundView: View {
         ForEach(0..<self.tableBounds.columnCount, id: \.self) { column in
           let bounds = self.tableBounds.bounds(forRow: row, column: column)
 
-          Rectangle()
-            .fill(self.tableBackgroundStyle.background(row, column))
+          self.tableBackgroundStyle.background(row, column).fill(Rectangle())
             .offset(x: bounds.minX, y: bounds.minY)
             .frame(width: bounds.width, height: bounds.height)
         }

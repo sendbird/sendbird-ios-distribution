@@ -11,7 +11,7 @@ public struct FontWidth: TextStyle {
     self.width = width
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.fontProperties?.width = self.width
   }
 }

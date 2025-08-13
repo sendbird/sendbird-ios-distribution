@@ -27,6 +27,6 @@ struct ListItemSequence: View {
         markerWidth: self.markerWidth
       )
     }
-    .labelStyle(.titleAndIcon)
+    .labelStyle(CompatTitleAndIconLabelStyle())
   }
 }

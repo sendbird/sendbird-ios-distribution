@@ -27,16 +27,9 @@ Pod::Spec.new do |s|
   s.prepare_command = <<-CMD
     if [ ! -d "Sources/SendbirdAIAgentCore/SendbirdAIAgentCore.xcframework" ]; then
       echo "Downloading SendbirdAIAgentCore XCFramework from GitHub releases..."
-      curl -L -o SendbirdAIAgentCore.xcframework.zip "https://github.com/sendbird/sendbird-ai-agent-core-ios/releases/download/#{s.version}/SendbirdAIAgentCore.xcframework.zip"
+      curl -L -o SendbirdAIAgentCore.xcframework.zip "https://github.com/sendbird/sendbird-ai-agent-core-ios/releases/download/0.10.0/SendbirdAIAgentCore.xcframework.zip"
       unzip -o SendbirdAIAgentCore.xcframework.zip -d Sources/SendbirdAIAgentCore/
       rm SendbirdAIAgentCore.xcframework.zip
     fi
   CMD
-  
-  # Build settings to handle Swift version compatibility
-  # s.pod_target_xcconfig = {
-  #   'SWIFT_SUPPRESS_WARNINGS' => 'YES',
-  #   'GCC_WARN_INHIBIT_ALL_WARNINGS' => 'YES',
-  #   'SWIFT_VERSION' => '5.7'
-  # }
 end

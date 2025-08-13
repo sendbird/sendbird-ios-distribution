@@ -83,14 +83,14 @@ extension Theme {
       configuration.label
         .relativePadding(length: .rem(0.94118))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
+        .background(
           ZStack {
             RoundedRectangle.container
               .fill(Color.asideNoteBackground)
             RoundedRectangle.container
               .strokeBorder(Color.asideNoteBorder)
           }
-        }
+        )
         .markdownMargin(top: .em(1.6), bottom: .zero)
     }
     .codeBlock { configuration in

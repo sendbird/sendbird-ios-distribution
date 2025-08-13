@@ -23,7 +23,7 @@ extension View {
 
   func textStyleForegroundColor() -> some View {
     TextStyleAttributesReader { attributes in
-      self.foregroundColor(attributes.foregroundColor)
+      self.foregroundColor(attributes.swiftUIForegroundColor)
     }
   }
 

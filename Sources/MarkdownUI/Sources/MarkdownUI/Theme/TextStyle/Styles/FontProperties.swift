@@ -183,7 +183,7 @@ public struct FontProperties: Hashable {
 }
 
 extension FontProperties: TextStyle {
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.fontProperties = self
   }
 }

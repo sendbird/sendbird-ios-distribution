@@ -10,7 +10,7 @@ public struct FontFamily: TextStyle {
     self.family = family
   }
 
-  public func _collectAttributes(in attributes: inout AttributeContainer) {
+  public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
     attributes.fontProperties?.family = self.family
   }
 }
