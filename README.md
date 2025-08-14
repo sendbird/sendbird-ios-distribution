@@ -53,7 +53,7 @@ platform :ios, '15.0'
 target 'YourApp' do
   use_frameworks!
   
-  pod 'SendbirdAIAgentMessenger', '~> 0.10.1'
+  pod 'SendbirdAIAgentMessenger', '~> 0.10.2'
 end
 
 # Required for XCFramework download scripts
