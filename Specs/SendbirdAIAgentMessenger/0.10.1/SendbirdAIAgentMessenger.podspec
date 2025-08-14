@@ -3,12 +3,12 @@ Pod::Spec.new do |s|
   s.version = '0.10.1'
   s.summary = 'Sendbird AI Agent Messenger - Main User Interface'
   s.description = 'The primary interface for Sendbird AI Agent with Markdown rendering, syntax highlighting, and advanced messaging capabilities. This is what users should integrate.'
-  s.homepage = 'https://github.com/sendbird/sendbird-cocoapods'
+  s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
   s.license = { :type => 'Commercial', :file => 'Sources/SendbirdAIAgentMessenger/LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
   
   s.source = {
-    :git => 'https://github.com/sendbird/sendbird-cocoapods.git',
+    :git => 'https://github.com/sendbird/sendbird-ios-distribution.git',
     :tag => "SendbirdAIAgentMessenger-v#{s.version}"
   }
   
