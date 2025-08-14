@@ -45,7 +45,7 @@ For detailed usage instructions, examples, and API documentation, please refer t
 Add the private spec repository and configure post-install settings:
 
 ```ruby
-source 'https://github.com/sendbird/sendbird-cocoapods.git'
+source 'https://github.com/sendbird/sendbird-ios-distribution.git'
 source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'

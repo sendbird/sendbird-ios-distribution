@@ -19,7 +19,7 @@ The primary interface for Sendbird AI Agent with advanced messaging capabilities
 Add the private spec repository to your Podfile:
 
 ```ruby
-source 'https://github.com/sendbird/sendbird-cocoapods.git'
+source 'https://github.com/sendbird/sendbird-ios-distribution.git'
 source 'https://cdn.cocoapods.org/'
 
 platform :ios, '15.0'

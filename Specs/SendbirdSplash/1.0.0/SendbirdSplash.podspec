@@ -3,12 +3,12 @@ Pod::Spec.new do |s|
   s.version = '1.0.0'
   s.summary = 'Sendbird customized Splash syntax highlighter'
   s.description = 'A fast, lightweight Swift syntax highlighter, customized for Sendbird AI Agent'
-  s.homepage = 'https://github.com/sendbird/sendbird-cocoapods'
+  s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
   s.license = { :type => 'MIT', :file => 'LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
   
   s.source = {
-    :git => 'https://github.com/sendbird/sendbird-cocoapods.git',
+    :git => 'https://github.com/sendbird/sendbird-ios-distribution.git',
     :tag => "SendbirdSplash-v#{s.version}"
   }
   

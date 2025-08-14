@@ -3,13 +3,13 @@ Pod::Spec.new do |s|
   s.version = '0.10.2'
   s.summary = 'Sendbird AI Agent Core Library'
   s.description = 'Core library for Sendbird AI Agent with advanced messaging features'
-  s.homepage = 'https://github.com/sendbird/sendbird-cocoapods'
+  s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
   s.license = { :type => 'Commercial', :file => 'Sources/SendbirdAIAgentCore/LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
   
   # GitHub source with XCFramework download
   s.source = {
-    :git => 'https://github.com/sendbird/sendbird-cocoapods.git',
+    :git => 'https://github.com/sendbird/sendbird-ios-distribution.git',
     :tag => "SendbirdAIAgentCore-v#{s.version}"
   }
   

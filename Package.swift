@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "SendbirdUIComponents",
+    name: "SendbirdPackages",
     platforms: [
         .macOS(.v12),
         .iOS(.v14),
