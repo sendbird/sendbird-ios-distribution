@@ -48,3 +48,5 @@ LocalTest/*.xcworkspace
 
 # Keep example workspace contents
 !LocalTest/*.xcworkspace/contents.xcworkspacedata
+.build
+Package.resolved
