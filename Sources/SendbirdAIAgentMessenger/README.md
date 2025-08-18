@@ -2,8 +2,6 @@
 
 The primary interface for Sendbird AI Agent with advanced messaging capabilities.
 
-## Version: 0.10.0
-
 ## 🎯 This is the main module that users should integrate!
 
 ## Features
@@ -27,7 +25,7 @@ platform :ios, '15.0'
 target 'YourApp' do
   use_frameworks!
   
-  pod 'SendbirdAIAgentMessenger', '~> 0.10.0'
+  pod 'SendbirdAIAgentMessenger', '~> 0.10.3'
 end
 ```
 
