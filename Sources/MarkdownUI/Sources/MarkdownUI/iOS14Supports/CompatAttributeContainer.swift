@@ -342,7 +342,7 @@ public extension CompatLineStyle {
 /// iOS 14.0에서도 titleAndIcon과 동일한 사용감을 주기 위한 호환 래퍼
 public struct CompatTitleAndIconLabelStyle: LabelStyle {
     public func makeBody(configuration: Configuration) -> some View {
-        HStack {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
             configuration.icon
             configuration.title
         }

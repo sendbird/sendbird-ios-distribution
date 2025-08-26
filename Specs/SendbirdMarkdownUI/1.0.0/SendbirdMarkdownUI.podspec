@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdMarkdownUI'
-  s.version = '1.0.0'
+  s.version = '1.0.1'
   s.summary = 'Sendbird customized MarkdownUI for SwiftUI'
   s.description = 'A powerful SwiftUI library for displaying and customizing Markdown text, with swift-cmark included, customized for Sendbird AI Agent'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
