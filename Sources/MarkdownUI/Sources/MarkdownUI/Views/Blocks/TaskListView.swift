@@ -25,8 +25,9 @@ struct TaskListView: View {
     BlockSequence(self.items) { _, item in
       TaskListItemView(item: item)
     }
-    .labelStyle(CompatTitleAndIconLabelStyle())
+    .modifier(ListLabelStyleModifier())
     .environment(\.listLevel, self.listLevel + 1)
     .environment(\.tightSpacingEnabled, self.isTight)
   }
 }
+
