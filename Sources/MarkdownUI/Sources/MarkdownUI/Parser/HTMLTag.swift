@@ -6,7 +6,14 @@ struct HTMLTag {
 
 extension HTMLTag {
   private enum Constants {
-    static let tagExpression = try! NSRegularExpression(pattern: "<\\/?([a-zA-Z0-9]+)[^>]*>")
+    static let tagExpression: NSRegularExpression = {
+      do {
+        return try NSRegularExpression(pattern: "<\\/?([a-zA-Z0-9]+)[^>]*>")
+      } catch {
+        print("HTMLTag: Failed to create regex pattern: \(error)")
+        return NSRegularExpression()
+      }
+    }()
   }
 
   init?(_ description: String) {

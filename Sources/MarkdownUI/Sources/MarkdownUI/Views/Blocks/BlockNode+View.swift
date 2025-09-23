@@ -1,6 +1,16 @@
 import SwiftUI
 
 extension BlockNode: View {
+
+  // Helper function to safely create NSRegularExpression
+  private func safeRegex(pattern: String, options: NSRegularExpression.Options = []) -> NSRegularExpression? {
+    do {
+      return try NSRegularExpression(pattern: pattern, options: options)
+    } catch {
+      print("BlockNode: Failed to create regex pattern '\(pattern)': \(error)")
+      return nil
+    }
+  }
   var body: some View {
     switch self {
     case .blockquote(let children):
@@ -115,10 +125,14 @@ extension BlockNode: View {
       .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
 
     let headerPattern = "<thead[^>]*>.*?<tr[^>]*>(.*?)</tr>.*?</thead>"
-    let headerRegex = try! NSRegularExpression(pattern: headerPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let headerRegex = safeRegex(pattern: headerPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return (alignments: [RawTableColumnAlignment.none], rows: [])
+    }
 
     let bodyPattern = "<tbody[^>]*>(.*?)</tbody>"
-    let bodyRegex = try! NSRegularExpression(pattern: bodyPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let bodyRegex = safeRegex(pattern: bodyPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return (alignments: [RawTableColumnAlignment.none], rows: [])
+    }
 
     var rows: [RawTableRow] = []
     var columnCount = 0
@@ -148,7 +162,9 @@ extension BlockNode: View {
 
   private func extractRows(from html: String) -> [String] {
     let rowPattern = "<tr[^>]*>(.*?)</tr>"
-    let regex = try! NSRegularExpression(pattern: rowPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: rowPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return []
+    }
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
 
     return matches.compactMap { match in
@@ -159,7 +175,9 @@ extension BlockNode: View {
 
   private func extractCells(from html: String) -> [String] {
     let cellPattern = "<t[hd][^>]*>(.*?)</t[hd]>"
-    let regex = try! NSRegularExpression(pattern: cellPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: cellPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return []
+    }
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
 
     return matches.compactMap { match in
@@ -171,7 +189,9 @@ extension BlockNode: View {
 
   private func extractListItems(from html: String) -> [RawListItem] {
     let itemPattern = "<li[^>]*>(.*?)</li>"
-    let regex = try! NSRegularExpression(pattern: itemPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: itemPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return []
+    }
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
 
     return matches.compactMap { match in
@@ -187,7 +207,9 @@ extension BlockNode: View {
 
   private func extractHeading(from html: String) -> (level: Int, content: String) {
     let headingPattern = "<h([1-6])[^>]*>(.*?)</h[1-6]>"
-    let regex = try! NSRegularExpression(pattern: headingPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: headingPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return (level: 1, content: "")
+    }
 
     if let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
        let levelRange = Range(match.range(at: 1), in: html),
@@ -203,7 +225,9 @@ extension BlockNode: View {
   private func extractCodeContent(from html: String) -> String {
     // <pre><code>content</code></pre> 또는 <code>content</code>
     let codePattern = "<(?:pre[^>]*>)?<code[^>]*>(.*?)</code>(?:</pre>)?"
-    let regex = try! NSRegularExpression(pattern: codePattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: codePattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return html.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     if let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
        let range = Range(match.range(at: 1), in: html) {
@@ -215,7 +239,9 @@ extension BlockNode: View {
 
   private func extractBlockquoteContent(from html: String) -> String {
     let blockquotePattern = "<blockquote[^>]*>(.*?)</blockquote>"
-    let regex = try! NSRegularExpression(pattern: blockquotePattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    guard let regex = safeRegex(pattern: blockquotePattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+      return html.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     if let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
        let range = Range(match.range(at: 1), in: html) {
@@ -231,33 +257,36 @@ extension BlockNode: View {
 
     // ul 태그와 그 내용 제거
     let ulPattern = "<ul[^>]*>.*?</ul>"
-    let ulRegex = try! NSRegularExpression(pattern: ulPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
-    cleanedString = ulRegex.stringByReplacingMatches(
-      in: cleanedString,
-      options: [],
-      range: NSRange(cleanedString.startIndex..., in: cleanedString),
-      withTemplate: ""
-    )
+    if let ulRegex = safeRegex(pattern: ulPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+      cleanedString = ulRegex.stringByReplacingMatches(
+        in: cleanedString,
+        options: [],
+        range: NSRange(cleanedString.startIndex..., in: cleanedString),
+        withTemplate: ""
+      )
+    }
 
     // ol 태그와 그 내용 제거
     let olPattern = "<ol[^>]*>.*?</ol>"
-    let olRegex = try! NSRegularExpression(pattern: olPattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
-    cleanedString = olRegex.stringByReplacingMatches(
-      in: cleanedString,
-      options: [],
-      range: NSRange(cleanedString.startIndex..., in: cleanedString),
-      withTemplate: ""
-    )
+    if let olRegex = safeRegex(pattern: olPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+      cleanedString = olRegex.stringByReplacingMatches(
+        in: cleanedString,
+        options: [],
+        range: NSRange(cleanedString.startIndex..., in: cleanedString),
+        withTemplate: ""
+      )
+    }
 
     // 남은 HTML 태그 제거
     let tagPattern = "<[^>]+>"
-    let tagRegex = try! NSRegularExpression(pattern: tagPattern, options: [.caseInsensitive])
-    cleanedString = tagRegex.stringByReplacingMatches(
-      in: cleanedString,
-      options: [],
-      range: NSRange(cleanedString.startIndex..., in: cleanedString),
-      withTemplate: ""
-    )
+    if let tagRegex = safeRegex(pattern: tagPattern, options: [.caseInsensitive]) {
+      cleanedString = tagRegex.stringByReplacingMatches(
+        in: cleanedString,
+        options: [],
+        range: NSRange(cleanedString.startIndex..., in: cleanedString),
+        withTemplate: ""
+      )
+    }
 
     // 여러 공백을 하나로 줄이고 앞뒤 공백 제거
     return cleanedString
