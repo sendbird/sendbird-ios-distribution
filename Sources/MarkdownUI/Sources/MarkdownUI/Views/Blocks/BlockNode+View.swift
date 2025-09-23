@@ -7,7 +7,7 @@ extension BlockNode: View {
     do {
       return try NSRegularExpression(pattern: pattern, options: options)
     } catch {
-      print("BlockNode: Failed to create regex pattern '\(pattern)': \(error)")
+      debugPrint("BlockNode: Failed to create regex pattern '\(pattern)': \(error)")
       return nil
     }
   }

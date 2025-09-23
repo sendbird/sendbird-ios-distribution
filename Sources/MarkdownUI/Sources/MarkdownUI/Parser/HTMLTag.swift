@@ -10,7 +10,7 @@ extension HTMLTag {
       do {
         return try NSRegularExpression(pattern: "<\\/?([a-zA-Z0-9]+)[^>]*>")
       } catch {
-        print("HTMLTag: Failed to create regex pattern: \(error)")
+        debugPrint("HTMLTag: Failed to create regex pattern: \(error)")
         return NSRegularExpression()
       }
     }()
