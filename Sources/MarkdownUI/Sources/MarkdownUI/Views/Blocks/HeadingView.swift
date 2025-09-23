@@ -12,7 +12,8 @@ struct HeadingView: View {
   }
 
   var body: some View {
-    self.headings[self.level - 1].makeBody(
+    let safeLevel = max(1, min(self.level, self.headings.count))
+    self.headings[safeLevel - 1].makeBody(
       configuration: .init(
         label: .init(InlineText(self.content)),
         content: .init(block: .heading(level: self.level, content: self.content))

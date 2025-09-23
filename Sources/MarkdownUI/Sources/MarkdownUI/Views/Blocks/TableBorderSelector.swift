@@ -26,7 +26,8 @@ extension TableBorderSelector {
   /// A table border selector that selects the inside horizontal borders of a table.
   public static var insideHorizontalBorders: TableBorderSelector {
     TableBorderSelector { tableBounds, borderWidth in
-      (0..<tableBounds.rowCount - 1)
+      guard tableBounds.rowCount > 1 else { return [] }
+      return (0..<tableBounds.rowCount - 1)
         .map {
           tableBounds.bounds(forRow: $0)
             .insetBy(dx: -borderWidth, dy: -borderWidth)
@@ -43,7 +44,8 @@ extension TableBorderSelector {
   /// A table border selector that selects the inside vertical borders of a table.
   public static var insideVerticalBorders: TableBorderSelector {
     TableBorderSelector { tableBounds, borderWidth in
-      (0..<tableBounds.columnCount - 1)
+      guard tableBounds.columnCount > 1 else { return [] }
+      return (0..<tableBounds.columnCount - 1)
         .map {
           tableBounds.bounds(forColumn: $0)
             .insetBy(dx: -borderWidth, dy: -borderWidth)

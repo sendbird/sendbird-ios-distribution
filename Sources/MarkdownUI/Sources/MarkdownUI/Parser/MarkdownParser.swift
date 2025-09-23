@@ -232,8 +232,12 @@ extension UnsafeNode {
   }
 
   fileprivate var tableAlignments: [RawTableColumnAlignment] {
-    (0..<self.tableColumns).map { column in
-      let ascii = cmark_gfm_extensions_get_table_alignments(self)[column]
+    guard self.tableColumns > 0 else { return [] }
+    let alignments = cmark_gfm_extensions_get_table_alignments(self)
+    guard alignments != nil else { return [] }
+
+    return (0..<self.tableColumns).map { column in
+      let ascii = alignments![column]
       let scalar = UnicodeScalar(ascii)
       let character = Character(scalar)
       return .init(rawValue: character) ?? .none
