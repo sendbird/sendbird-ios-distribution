@@ -54,7 +54,12 @@ extension BlockNode {
             items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
           )
         default:
-          fatalError("cmark reported a list node without a list type.")
+          // 안전한 폴백: 알 수 없는 리스트 타입은 bullet list로 처리
+          debugPrint("Warning: cmark reported a list node without a list type. Treating as bullet list.")
+          self = .bulletedList(
+            isTight: unsafeNode.isTightList,
+            items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+          )
         }
       }
     case .codeBlock:
@@ -85,7 +90,10 @@ extension BlockNode {
 extension RawListItem {
   fileprivate init(unsafeNode: UnsafeNode) {
     guard unsafeNode.nodeType == .item else {
-      fatalError("Expected a list item but got a '\(unsafeNode.nodeType)' instead.")
+      // 안전한 폴백: 예상치 못한 노드 타입을 빈 list item으로 처리
+        debugPrint("Warning: Expected a list item but got a '\(unsafeNode.nodeType)' instead.")
+      self.init(children: [])
+      return
     }
     self.init(children: unsafeNode.children.compactMap(BlockNode.init(unsafeNode:)))
   }
@@ -94,7 +102,10 @@ extension RawListItem {
 extension RawTaskListItem {
   fileprivate init(unsafeNode: UnsafeNode) {
     guard unsafeNode.nodeType == .taskListItem || unsafeNode.nodeType == .item else {
-      fatalError("Expected a list item but got a '\(unsafeNode.nodeType)' instead.")
+      // 안전한 폴백: 예상치 못한 노드 타입을 미완료 task item으로 처리
+        debugPrint("Warning: Expected a task list item but got a '\(unsafeNode.nodeType)' instead.")
+      self.init(isCompleted: false, children: [])
+      return
     }
     self.init(
       isCompleted: unsafeNode.isTaskListItemChecked,
@@ -106,7 +117,10 @@ extension RawTaskListItem {
 extension RawTableRow {
   fileprivate init(unsafeNode: UnsafeNode) {
     guard unsafeNode.nodeType == .tableRow || unsafeNode.nodeType == .tableHead else {
-      fatalError("Expected a table row but got a '\(unsafeNode.nodeType)' instead.")
+      // 안전한 폴백: 예상치 못한 노드 타입을 빈 table row로 처리
+        debugPrint("Warning: Expected a table row but got a '\(unsafeNode.nodeType)' instead.")
+      self.init(cells: [])
+      return
     }
     self.init(cells: unsafeNode.children.map(RawTableCell.init(unsafeNode:)))
   }
@@ -115,7 +129,10 @@ extension RawTableRow {
 extension RawTableCell {
   fileprivate init(unsafeNode: UnsafeNode) {
     guard unsafeNode.nodeType == .tableCell else {
-      fatalError("Expected a table cell but got a '\(unsafeNode.nodeType)' instead.")
+      // 안전한 폴백: 예상치 못한 노드 타입을 빈 table cell로 처리
+        debugPrint("Warning: Expected a table cell but got a '\(unsafeNode.nodeType)' instead.")
+      self.init(content: [])
+      return
     }
     self.init(content: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
   }
@@ -163,7 +180,9 @@ extension UnsafeNode {
   fileprivate var nodeType: NodeType {
     let typeString = String(cString: cmark_node_get_type_string(self))
     guard let nodeType = NodeType(rawValue: typeString) else {
-      fatalError("Unknown node type '\(typeString)' found.")
+      // 안전한 폴백: 알 수 없는 노드는 텍스트로 처리
+        debugPrint("Warning: Unknown node type '\(typeString)' found. Treating as text.")
+      return .text
     }
     return nodeType
   }
@@ -319,7 +338,7 @@ extension UnsafeNode {
         return nil
       }
       cmark_gfm_extensions_set_table_columns(node, UInt16(columnAlignments.count))
-      var alignments = columnAlignments.map { $0.rawValue.asciiValue! }
+      var alignments = columnAlignments.map { $0.rawValue.asciiValue ?? 0 }
       cmark_gfm_extensions_set_table_alignments(node, UInt16(columnAlignments.count), &alignments)
       rows.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
       if let header = cmark_node_first_child(node) {

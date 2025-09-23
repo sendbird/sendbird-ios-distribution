@@ -38,7 +38,10 @@ public struct CompatAttributeContainer {
     public var fontProperties: FontProperties?
     public var tracking: CGFloat?
 
-    public init() {}
+    public init() {
+        // FontProperties를 기본값으로 초기화하여 nil 접근 문제 방지
+        self.fontProperties = FontProperties()
+    }
 
     // MARK: - Merge (AttributeContainer의 merge와 동일 컨셉: other가 우선)
     public func merged(with other: CompatAttributeContainer) -> CompatAttributeContainer {

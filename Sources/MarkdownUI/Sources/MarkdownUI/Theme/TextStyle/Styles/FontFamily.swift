@@ -11,6 +11,9 @@ public struct FontFamily: TextStyle {
   }
 
   public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
+    if attributes.fontProperties == nil {
+      attributes.fontProperties = FontProperties()
+    }
     attributes.fontProperties?.family = self.family
   }
 }
