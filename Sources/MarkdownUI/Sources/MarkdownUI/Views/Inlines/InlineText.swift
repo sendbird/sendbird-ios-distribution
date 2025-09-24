@@ -31,7 +31,7 @@ struct InlineText: View {
           ),
           images: self.inlineImages,
           softBreakMode: self.softBreakMode,
-          attributes: attributes as! AttributeContainer
+          attributes: attributes as? AttributeContainer ?? AttributeContainer()
         )
       } else {
         // iOS 14: CompatAttributeContainer 사용
@@ -46,7 +46,7 @@ struct InlineText: View {
           ),
           images: self.inlineImages,
           softBreakMode: self.softBreakMode,
-          attributes: attributes as! CompatAttributeContainer
+          attributes: attributes as? CompatAttributeContainer ?? CompatAttributeContainer()
         )
       }
     }

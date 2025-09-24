@@ -78,6 +78,48 @@ extension TextStyle {
     if let fontProperties = attributes[FontPropertiesAttribute.self] {
       compatAttributes.fontProperties = fontProperties
     }
+
+    // 기존 AttributeContainer 속성들을 CompatAttributeContainer로 복사
+    // Note: Font 변환은 복잡하므로 FontProperties로 처리
+
+    if let foregroundColor = attributes.swiftUI.foregroundColor {
+      #if canImport(UIKit)
+      // iOS 15+에서만 실행되므로 UIColor(Color) 변환 안전
+      compatAttributes.foregroundColor = UIColor(foregroundColor)
+      #elseif canImport(AppKit)
+      compatAttributes.foregroundColor = NSColor(foregroundColor)
+      #endif
+    }
+
+    if let backgroundColor = attributes.swiftUI.backgroundColor {
+      #if canImport(UIKit)
+      // iOS 15+에서만 실행되므로 UIColor(Color) 변환 안전
+      compatAttributes.backgroundColor = UIColor(backgroundColor)
+      #elseif canImport(AppKit)
+      compatAttributes.backgroundColor = NSColor(backgroundColor)
+      #endif
+    }
+
+    if let kern = attributes.kern {
+      compatAttributes.kern = kern
+    }
+    if let baselineOffset = attributes.baselineOffset {
+      compatAttributes.baselineOffset = baselineOffset
+    }
+    if let link = attributes.link {
+      compatAttributes.link = link
+    }
+    if let tracking = attributes.tracking {
+      compatAttributes.tracking = tracking
+    }
+    if let underlineStyle = attributes.underlineStyle {
+      let compatStyle = CompatLineStyle(underlineStyle)
+      compatAttributes.underlineStyle = compatStyle.nsUnderlineStyle
+    }
+    if let strikethroughStyle = attributes.strikethroughStyle {
+      let compatStyle = CompatLineStyle(strikethroughStyle)
+      compatAttributes.strikethroughStyle = compatStyle.nsUnderlineStyle
+    }
     
     // TextStyle 적용
     self._collectAttributes(in: &compatAttributes)
@@ -94,6 +136,33 @@ extension TextStyle {
     if let backgroundColor = compatAttributes.swiftUIBackgroundColor {
       attributes.swiftUI.backgroundColor = backgroundColor
     }
+
+    // UnderlineStyle 및 StrikethroughStyle 복사
+    if let underlineStyle = compatAttributes.underlineStyle {
+      let compatStyle = CompatLineStyle(underlineStyle)
+      attributes.underlineStyle = compatStyle.textLineStyle
+    }
+    if let strikethroughStyle = compatAttributes.strikethroughStyle {
+      let compatStyle = CompatLineStyle(strikethroughStyle)
+      attributes.strikethroughStyle = compatStyle.textLineStyle
+    }
+
+    // 기타 텍스트 속성 복사
+    if let kern = compatAttributes.kern {
+      attributes.kern = kern
+    }
+    if let baselineOffset = compatAttributes.baselineOffset {
+      attributes.baselineOffset = baselineOffset
+    }
+    if let link = compatAttributes.link {
+      attributes.link = link
+    }
+    if let tracking = compatAttributes.tracking {
+      attributes.tracking = tracking
+    }
+
+    // 폰트 관련 속성 - FontProperties로 처리되므로 직접 복사하지 않음
+    // Note: Font는 FontProperties를 통해 처리됨
   }
   #endif
 }

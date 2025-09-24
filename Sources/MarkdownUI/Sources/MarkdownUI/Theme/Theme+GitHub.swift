@@ -30,6 +30,7 @@ extension Theme {
     }
     .link {
       ForegroundColor(.link)
+      UnderlineStyle(CompatLineStyle.single)
     }
     .heading1 { configuration in
       VStack(alignment: .leading, spacing: 0) {

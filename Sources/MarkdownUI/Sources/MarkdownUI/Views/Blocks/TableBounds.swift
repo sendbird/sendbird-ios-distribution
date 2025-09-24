@@ -51,20 +51,25 @@ struct TableBounds {
   }
 
   func bounds(forRow row: Int, column: Int) -> CGRect {
-    CGRect(
+    guard row >= 0 && row < rowCount && column >= 0 && column < columnCount else {
+      return .zero
+    }
+    return CGRect(
       origin: .init(x: self.columns[column].minX, y: self.rows[row].minY),
       size: .init(width: self.columns[column].width, height: self.rows[row].height)
     )
   }
 
   func bounds(forRow row: Int) -> CGRect {
-    (0..<self.columnCount)
+    guard columnCount > 0 else { return .zero }
+    return (0..<self.columnCount)
       .map { self.bounds(forRow: row, column: $0) }
       .reduce(.null, CGRectUnion)
   }
 
   func bounds(forColumn column: Int) -> CGRect {
-    (0..<self.rowCount)
+    guard rowCount > 0 else { return .zero }
+    return (0..<self.rowCount)
       .map { self.bounds(forRow: $0, column: column) }
       .reduce(.null, CGRectUnion)
   }

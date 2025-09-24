@@ -11,6 +11,9 @@ public struct FontWeight: TextStyle {
   }
 
   public func _collectAttributes(in attributes: inout CompatAttributeContainer) {
+    if attributes.fontProperties == nil {
+      attributes.fontProperties = FontProperties()
+    }
     attributes.fontProperties?.weight = self.weight
   }
 }
