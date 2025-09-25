@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdAIAgentCore'
-  s.version = '0.10.10'
+  s.version = '1.0.0'
   s.summary = 'Sendbird AI Agent Core Library'
   s.description = 'Core library for Sendbird AI Agent with advanced messaging features'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
@@ -20,8 +20,8 @@ Pod::Spec.new do |s|
   s.ios.vendored_frameworks = 'Sources/SendbirdAIAgentCore/SendbirdAIAgentCore.xcframework'
   
   # Public CocoaPods trunk dependency
-  s.dependency 'SendbirdUIMessageTemplate', '~> 3.32.1'
-  s.dependency 'SendbirdChatSDK', '~> 4.29.2'
+  s.dependency 'SendbirdUIMessageTemplate', '~> 3.32.2'
+  s.dependency 'SendbirdChatSDK', '~> 4.30.0'
   
   # Download XCFramework from GitHub releases
   s.prepare_command = <<-CMD
