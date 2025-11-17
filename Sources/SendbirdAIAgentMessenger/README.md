@@ -1,6 +1,6 @@
-# Sendbird AI Agent Messenger
+# Delight AI Agent Messenger
 
-The primary interface for Sendbird AI Agent with advanced messaging capabilities.
+The primary interface for Delight AI Agent with advanced messaging capabilities.
 
 ## 🎯 This is the main module that users should integrate!
 

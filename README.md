@@ -24,7 +24,7 @@ This repository contains CocoaPods specifications and source code for Sendbird's
 The AI Agent modules provide conversational AI capabilities for iOS applications.
 
 ### SendbirdAIAgentMessenger
-The primary integration point for Sendbird AI Agent functionality.
+The primary integration point for Delight AI Agent functionality.
 - **Type**: Swift source code
 - **Features**: AI conversation, Markdown rendering, syntax highlighting, image loading
 - **Dependencies**: Automatically includes all required modules
@@ -32,12 +32,12 @@ The primary integration point for Sendbird AI Agent functionality.
 ### SendbirdAIAgentCore
 Core AI Agent library with XCFramework distribution.
 - **Type**: Commercial XCFramework (optimized binary)
-- **Source**: Downloaded dynamically from [sendbird-ai-agent-core-ios](https://github.com/sendbird/sendbird-ai-agent-core-ios/releases) releases
+- **Source**: Downloaded dynamically from [delight-ai-agent-core-ios](https://github.com/sendbird/delight-ai-agent-core-ios/releases) releases
 - **Distribution**: Dynamic download via `prepare_command` - no local storage needed
 
 ### Usage
 
-For detailed usage instructions, examples, and API documentation, please refer to the [Sendbird AI Agent iOS documentation](https://github.com/sendbird/sendbird-ai-agent/tree/main/ios).
+For detailed usage instructions, examples, and API documentation, please refer to the [Delight AI Agent iOS documentation](https://github.com/sendbird/delight-ai-agent/tree/main/ios).
 
 ## Installation
 
