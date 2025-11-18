@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdAIAgentCore'
   s.version = '1.3.1'
-  s.summary = 'Sendbird AI Agent Core Library'
-  s.description = 'Core library for Sendbird AI Agent with advanced messaging features'
+  s.summary = 'Delight AI Agent Core Library'
+  s.description = 'Core library for Delight AI Agent with advanced messaging features'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
   s.license = { :type => 'Commercial', :file => 'Sources/SendbirdAIAgentCore/LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
@@ -27,7 +27,7 @@ Pod::Spec.new do |s|
   s.prepare_command = <<-CMD
     if [ ! -d "Sources/SendbirdAIAgentCore/SendbirdAIAgentCore.xcframework" ]; then
       echo "Downloading SendbirdAIAgentCore XCFramework from GitHub releases..."
-      curl -L -o SendbirdAIAgentCore.xcframework.zip "https://github.com/sendbird/sendbird-ai-agent-core-ios/releases/download/#{s.version}/SendbirdAIAgentCore.xcframework.zip"
+      curl -L -o SendbirdAIAgentCore.xcframework.zip "https://github.com/sendbird/delight-ai-agent-core-ios/releases/download/#{s.version}/SendbirdAIAgentCore.xcframework.zip"
       unzip -o SendbirdAIAgentCore.xcframework.zip -d Sources/SendbirdAIAgentCore/
       rm SendbirdAIAgentCore.xcframework.zip
     fi

@@ -1,6 +1,6 @@
-# Sendbird AI Agent Core
+# Delight AI Agent Core
 
-Core library for Sendbird AI Agent with advanced messaging features.
+Core library for Delight AI Agent with advanced messaging features.
 
 ## This library uses the pre-built XCFramework from Sendbird's official releases.
 

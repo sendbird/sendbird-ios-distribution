@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name = 'SendbirdSplash'
   s.version = '1.0.0'
   s.summary = 'Sendbird customized Splash syntax highlighter'
-  s.description = 'A fast, lightweight Swift syntax highlighter, customized for Sendbird AI Agent'
+  s.description = 'A fast, lightweight Swift syntax highlighter, customized for Delight AI Agent'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
   s.license = { :type => 'MIT', :file => 'LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
