@@ -11,8 +11,12 @@ import UIKit
 @available(iOS 15.0, tvOS 15.0, *)
 public struct CachingAsyncImageView: View {
   /// In-memory cache shared across all `CachingAsyncImageView` instances.
-  /// Keyed by URL.
-  public static let cache = NSCache<NSURL, UIImage>()
+  /// Keyed by URL. Cost is the decoded bitmap byte size.
+  public static let cache: NSCache<NSURL, UIImage> = {
+    let cache = NSCache<NSURL, UIImage>()
+    cache.totalCostLimit = 64 * 1024 * 1024
+    return cache
+  }()
 
   let url: URL?
   @State private var image: UIImage?
@@ -48,8 +52,11 @@ public struct CachingAsyncImageView: View {
     }
     do {
       let (data, _) = try await URLSession.shared.data(from: url)
-      if let img = UIImage(data: data) {
-        Self.cache.setObject(img, forKey: url as NSURL)
+      let decoded = await Task.detached(priority: .userInitiated) {
+        UIImage(data: data)?.preparingForDisplay()
+      }.value
+      if let img = decoded {
+        Self.cache.setObject(img, forKey: url as NSURL, cost: Self.bitmapByteCost(of: img))
         self.image = img
       } else {
         self.failed = true
@@ -57,6 +64,11 @@ public struct CachingAsyncImageView: View {
     } catch {
       self.failed = true
     }
+  }
+
+  private static func bitmapByteCost(of image: UIImage) -> Int {
+    let pixels = Int(image.size.width * image.scale) * Int(image.size.height * image.scale)
+    return pixels * 4
   }
 }
 #endif
