@@ -50,3 +50,4 @@ LocalTest/*.xcworkspace
 !LocalTest/*.xcworkspace/contents.xcworkspacedata
 .build
 Package.resolved
+.swiftpm/
