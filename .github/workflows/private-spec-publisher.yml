@@ -1,0 +1,132 @@
+name: Private Spec Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      pod_name:
+        description: Pod name expected in the submitted podspec
+        required: true
+        type: string
+      version:
+        description: Pod version expected in the submitted podspec
+        required: true
+        type: string
+      podspec_base64:
+        description: Base64-encoded generated podspec
+        required: true
+        type: string
+      dry_run:
+        description: Validate only; do not branch, commit, push, or open a PR
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout private spec source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install CocoaPods
+        run: gem install cocoapods -N
+
+      - name: Decode submitted podspec
+        env:
+          PODSPEC_BASE64: ${{ inputs.podspec_base64 }}
+        run: |
+          printf '%s' "$PODSPEC_BASE64" | base64 --decode > submitted.podspec
+
+      - name: Validate submitted podspec
+        if: ${{ inputs.dry_run }}
+        run: |
+          ruby scripts/private_spec_publisher.rb \
+            --podspec submitted.podspec \
+            --pod "${{ inputs.pod_name }}" \
+            --version "${{ inputs.version }}" \
+            --dry-run
+
+      - name: Prepare publish branch
+        if: ${{ !inputs.dry_run }}
+        env:
+          POD_NAME: ${{ inputs.pod_name }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          branch="private-spec/${POD_NAME}-${VERSION}"
+
+          git fetch origin main
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch:$branch"
+            git switch "$branch"
+            git rebase origin/main
+          else
+            git switch -c "$branch" origin/main
+          fi
+
+          echo "PUBLISH_BRANCH=$branch" >> "$GITHUB_ENV"
+
+      - name: Publish private spec
+        if: ${{ !inputs.dry_run }}
+        id: publish
+        run: |
+          ruby scripts/private_spec_publisher.rb \
+            --podspec submitted.podspec \
+            --pod "${{ inputs.pod_name }}" \
+            --version "${{ inputs.version }}" \
+            --write \
+            --github-output
+
+      - name: Commit and push private spec
+        if: ${{ !inputs.dry_run }}
+        env:
+          DESTINATION: ${{ steps.publish.outputs.destination }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [[ -z "$(git status --porcelain -- "$DESTINATION")" ]]; then
+            echo "No private spec changes to commit."
+            exit 0
+          fi
+
+          git add "$DESTINATION"
+          git commit -m "Publish ${{ inputs.pod_name }} ${{ inputs.version }} private spec"
+          git push --set-upstream origin "$PUBLISH_BRANCH"
+
+      - name: Open or update private spec PR
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DESTINATION: ${{ steps.publish.outputs.destination }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet origin/main...HEAD; then
+            echo "No branch diff against main; skipping PR creation."
+            exit 0
+          fi
+
+          if gh pr view "$PUBLISH_BRANCH" --json url --jq .url >/tmp/pr_url 2>/dev/null; then
+            echo "Updated existing PR: $(cat /tmp/pr_url)"
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$PUBLISH_BRANCH" \
+            --title "Publish ${{ inputs.pod_name }} ${{ inputs.version }} private spec" \
+            --body "Publishes \`${DESTINATION}\` through the reusable private spec publisher."
