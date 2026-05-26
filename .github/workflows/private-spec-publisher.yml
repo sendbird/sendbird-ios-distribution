@@ -51,13 +51,43 @@ jobs:
 
       - name: Validate submitted podspec
         id: validate
+        env:
+          POD_NAME: ${{ inputs.pod_name }}
+          VERSION: ${{ inputs.version }}
         run: |
-          ruby scripts/private_spec_publisher.rb \
-            --podspec submitted.podspec \
-            --pod "${{ inputs.pod_name }}" \
-            --version "${{ inputs.version }}" \
-            --dry-run \
-            --github-output
+          ruby <<'RUBY'
+          require "json"
+          require "open3"
+
+          podspec_path = "submitted.podspec"
+          expected_name = ENV.fetch("POD_NAME")
+          expected_version = ENV.fetch("VERSION")
+
+          stdout, stderr, status = Open3.capture3("pod", "ipc", "spec", podspec_path)
+          abort("podspec parse failed:\n#{stderr}") unless status.success?
+
+          spec = JSON.parse(stdout)
+          pod_name = spec.fetch("name").to_s
+          version = spec.fetch("version").to_s
+          safe_segment = /\A[A-Za-z0-9][A-Za-z0-9_.+-]*\z/
+
+          abort("invalid pod name: #{pod_name.inspect}") unless pod_name.match?(safe_segment)
+          abort("invalid version: #{version.inspect}") unless version.match?(safe_segment)
+          abort("pod name mismatch: requested #{expected_name.inspect}, parsed #{pod_name.inspect}") unless expected_name == pod_name
+          abort("version mismatch: requested #{expected_version.inspect}, parsed #{version.inspect}") unless expected_version == version
+
+          destination = "Specs/#{pod_name}/#{version}/#{pod_name}.podspec"
+
+          File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |file|
+            file.puts("pod_name=#{pod_name}")
+            file.puts("version=#{version}")
+            file.puts("destination=#{destination}")
+          end
+
+          puts "pod: #{pod_name}"
+          puts "version: #{version}"
+          puts "destination: #{destination}"
+          RUBY
 
       - name: Prepare publish branch
         if: ${{ !inputs.dry_run }}
@@ -82,13 +112,12 @@ jobs:
       - name: Publish private spec
         if: ${{ !inputs.dry_run }}
         id: publish
+        env:
+          DESTINATION: ${{ steps.validate.outputs.destination }}
         run: |
-          ruby scripts/private_spec_publisher.rb \
-            --podspec submitted.podspec \
-            --pod "${{ inputs.pod_name }}" \
-            --version "${{ inputs.version }}" \
-            --write \
-            --github-output
+          mkdir -p "$(dirname "$DESTINATION")"
+          cp submitted.podspec "$DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
 
       - name: Commit and push private spec
         if: ${{ !inputs.dry_run }}
