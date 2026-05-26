@@ -68,13 +68,13 @@ jobs:
           set -euo pipefail
           branch="private-spec/${POD_NAME}-${VERSION}"
 
-          git fetch origin master
+          git fetch origin main
           if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
             git fetch origin "$branch:$branch"
             git switch "$branch"
-            git rebase origin/master
+            git rebase origin/main
           else
-            git switch -c "$branch" origin/master
+            git switch -c "$branch" origin/main
           fi
 
           echo "PUBLISH_BRANCH=$branch" >> "$GITHUB_ENV"
@@ -117,8 +117,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet origin/master...HEAD; then
-            echo "No branch diff against master; skipping PR creation."
+          if git diff --quiet origin/main...HEAD; then
+            echo "No branch diff against main; skipping PR creation."
             exit 0
           fi
 
@@ -126,7 +126,7 @@ jobs:
             echo "Updated existing PR: $pr_url"
           else
             pr_url=$(gh pr create \
-              --base master \
+              --base main \
               --head "$PUBLISH_BRANCH" \
               --title "Publish ${{ inputs.pod_name }} ${{ inputs.version }} private spec" \
               --body "Publishes \`${DESTINATION}\` through the reusable private spec publisher.")
