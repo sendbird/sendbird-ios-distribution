@@ -50,19 +50,20 @@ jobs:
           printf '%s' "$PODSPEC_BASE64" | base64 --decode > submitted.podspec
 
       - name: Validate submitted podspec
-        if: ${{ inputs.dry_run }}
+        id: validate
         run: |
           ruby scripts/private_spec_publisher.rb \
             --podspec submitted.podspec \
             --pod "${{ inputs.pod_name }}" \
             --version "${{ inputs.version }}" \
-            --dry-run
+            --dry-run \
+            --github-output
 
       - name: Prepare publish branch
         if: ${{ !inputs.dry_run }}
         env:
-          POD_NAME: ${{ inputs.pod_name }}
-          VERSION: ${{ inputs.version }}
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
         run: |
           set -euo pipefail
           branch="private-spec/${POD_NAME}-${VERSION}"
