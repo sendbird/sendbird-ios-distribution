@@ -123,6 +123,8 @@ jobs:
         if: ${{ !inputs.dry_run }}
         env:
           DESTINATION: ${{ steps.publish.outputs.destination }}
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -134,7 +136,7 @@ jobs:
           fi
 
           git add "$DESTINATION"
-          git commit -m "Publish ${{ inputs.pod_name }} ${{ inputs.version }} private spec"
+          git commit -m "Publish ${POD_NAME} ${VERSION} private spec"
           git push --set-upstream origin "$PUBLISH_BRANCH"
 
       - name: Open or update private spec PR
@@ -143,6 +145,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           DESTINATION: ${{ steps.publish.outputs.destination }}
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
         run: |
           set -euo pipefail
 
@@ -157,7 +161,7 @@ jobs:
             pr_url=$(gh pr create \
               --base main \
               --head "$PUBLISH_BRANCH" \
-              --title "Publish ${{ inputs.pod_name }} ${{ inputs.version }} private spec" \
+              --title "Publish ${POD_NAME} ${VERSION} private spec" \
               --body "Publishes \`${DESTINATION}\` through the reusable private spec publisher.")
           fi
 
