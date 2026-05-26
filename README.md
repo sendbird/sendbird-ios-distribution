@@ -16,7 +16,8 @@ This repository contains CocoaPods specifications and source code for Sendbird's
     ├── SendbirdNetworkImage/
     ├── SendbirdSplash/
     ├── SendbirdAIAgentCore/
-    └── SendbirdAIAgentMessenger/
+    ├── SendbirdAIAgentMessenger/
+    └── SendbirdAuthSDK/
 ```
 
 ## AI Agent Integration
