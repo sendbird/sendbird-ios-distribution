@@ -16,8 +16,7 @@ This repository contains CocoaPods specifications and source code for Sendbird's
     ├── SendbirdNetworkImage/
     ├── SendbirdSplash/
     ├── SendbirdAIAgentCore/
-    ├── SendbirdAIAgentMessenger/
-    └── SendbirdAuthSDK/
+    └── SendbirdAIAgentMessenger/
 ```
 
 ## AI Agent Integration
@@ -93,23 +92,6 @@ This issue can occur when `FRAMEWORK_SEARCH_PATHS` is explicitly set to empty in
 ```bash
 pod install
 ```
-
-## Private Spec Publishing
-
-SDK release pipelines can submit a generated podspec to this repository without carrying their own private-spec PR logic. Encode the generated podspec and dispatch the publisher workflow:
-
-```bash
-PODSPEC_BASE64="$(base64 < SendbirdAuthSDK.podspec | tr -d '\n')"
-
-gh workflow run private-spec-publisher.yml \
-  --repo sendbird/sendbird-ios-distribution \
-  -f pod_name=SendbirdAuthSDK \
-  -f version=1.1.2 \
-  -f podspec_base64="$PODSPEC_BASE64" \
-  -f dry_run=true
-```
-
-Use `dry_run=false` after validation to create or update a private spec PR. The publisher validates that the podspec parses, that its name and version match the requested values, and that the destination is derived from the parsed podspec as `Specs/<PodName>/<version>/<PodName>.podspec`.
 
 ## Open Source Dependencies
 
