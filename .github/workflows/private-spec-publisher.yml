@@ -35,59 +35,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-
-      - name: Install CocoaPods
-        run: gem install cocoapods -N
-
       - name: Decode submitted podspec
         env:
           PODSPEC_BASE64: ${{ inputs.podspec_base64 }}
         run: |
           printf '%s' "$PODSPEC_BASE64" | base64 --decode > submitted.podspec
 
-      - name: Validate submitted podspec
+      - name: Validate publish inputs
         id: validate
         env:
           POD_NAME: ${{ inputs.pod_name }}
           VERSION: ${{ inputs.version }}
         run: |
-          ruby <<'RUBY'
-          require "json"
-          require "open3"
+          set -euo pipefail
 
-          podspec_path = "submitted.podspec"
-          expected_name = ENV.fetch("POD_NAME")
-          expected_version = ENV.fetch("VERSION")
+          pod_name="$POD_NAME"
+          version="$VERSION"
+          safe_segment='^[A-Za-z0-9][A-Za-z0-9_.+-]*$'
 
-          stdout, stderr, status = Open3.capture3("pod", "ipc", "spec", podspec_path)
-          abort("podspec parse failed:\n#{stderr}") unless status.success?
+          if [[ ! "$pod_name" =~ $safe_segment ]]; then
+            echo "invalid pod name: $pod_name" >&2
+            exit 1
+          fi
 
-          spec = JSON.parse(stdout)
-          pod_name = spec.fetch("name").to_s
-          version = spec.fetch("version").to_s
-          safe_segment = /\A[A-Za-z0-9][A-Za-z0-9_.+-]*\z/
+          if [[ ! "$version" =~ $safe_segment ]]; then
+            echo "invalid version: $version" >&2
+            exit 1
+          fi
 
-          abort("invalid pod name: #{pod_name.inspect}") unless pod_name.match?(safe_segment)
-          abort("invalid version: #{version.inspect}") unless version.match?(safe_segment)
-          abort("pod name mismatch: requested #{expected_name.inspect}, parsed #{pod_name.inspect}") unless expected_name == pod_name
-          abort("version mismatch: requested #{expected_version.inspect}, parsed #{version.inspect}") unless expected_version == version
+          destination="Specs/${pod_name}/${version}/${pod_name}.podspec"
 
-          destination = "Specs/#{pod_name}/#{version}/#{pod_name}.podspec"
+          {
+            echo "pod_name=$pod_name"
+            echo "version=$version"
+            echo "destination=$destination"
+          } >> "$GITHUB_OUTPUT"
 
-          File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |file|
-            file.puts("pod_name=#{pod_name}")
-            file.puts("version=#{version}")
-            file.puts("destination=#{destination}")
-          end
-
-          puts "pod: #{pod_name}"
-          puts "version: #{version}"
-          puts "destination: #{destination}"
-          RUBY
+          echo "pod: $pod_name"
+          echo "version: $version"
+          echo "destination: $destination"
 
       - name: Prepare publish branch
         if: ${{ !inputs.dry_run }}
