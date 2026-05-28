@@ -15,6 +15,11 @@ on:
         description: Base64-encoded generated podspec
         required: true
         type: string
+      dry_run:
+        description: Create or update the PR without approving or enabling auto-merge
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -145,7 +150,7 @@ jobs:
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
 
       - name: Approve private spec PR
-        if: ${{ steps.pull_request.outputs.pr_url != '' }}
+        if: ${{ !inputs.dry_run && steps.pull_request.outputs.pr_url != '' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_PR_APPROVAL }}
         run: |
@@ -161,7 +166,7 @@ jobs:
             --body "Approved by private spec publisher automation."
 
       - name: Enable auto-merge
-        if: ${{ steps.pull_request.outputs.pr_url != '' }}
+        if: ${{ !inputs.dry_run && steps.pull_request.outputs.pr_url != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
