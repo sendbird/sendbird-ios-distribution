@@ -1,0 +1,154 @@
+name: Private Spec Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      pod_name:
+        description: Pod name expected in the submitted podspec
+        required: true
+        type: string
+      version:
+        description: Pod version expected in the submitted podspec
+        required: true
+        type: string
+      podspec_base64:
+        description: Base64-encoded generated podspec
+        required: true
+        type: string
+      dry_run:
+        description: Validate only; do not branch, commit, push, or open a PR
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout private spec source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decode submitted podspec
+        env:
+          PODSPEC_BASE64: ${{ inputs.podspec_base64 }}
+        run: |
+          printf '%s' "$PODSPEC_BASE64" | base64 --decode > submitted.podspec
+
+      - name: Validate publish inputs
+        id: validate
+        env:
+          POD_NAME: ${{ inputs.pod_name }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          pod_name="$POD_NAME"
+          version="$VERSION"
+          safe_segment='^[A-Za-z0-9][A-Za-z0-9_.+-]*$'
+
+          if [[ ! "$pod_name" =~ $safe_segment ]]; then
+            echo "invalid pod name: $pod_name" >&2
+            exit 1
+          fi
+
+          if [[ ! "$version" =~ $safe_segment ]]; then
+            echo "invalid version: $version" >&2
+            exit 1
+          fi
+
+          destination="Specs/${pod_name}/${version}/${pod_name}.podspec"
+
+          {
+            echo "pod_name=$pod_name"
+            echo "version=$version"
+            echo "destination=$destination"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "pod: $pod_name"
+          echo "version: $version"
+          echo "destination: $destination"
+
+      - name: Prepare publish branch
+        if: ${{ !inputs.dry_run }}
+        env:
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="private-spec/${POD_NAME}-${VERSION}"
+
+          git fetch origin main
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch origin "$branch:$branch"
+            git switch "$branch"
+            git rebase origin/main
+          else
+            git switch -c "$branch" origin/main
+          fi
+
+          echo "PUBLISH_BRANCH=$branch" >> "$GITHUB_ENV"
+
+      - name: Publish private spec
+        if: ${{ !inputs.dry_run }}
+        id: publish
+        env:
+          DESTINATION: ${{ steps.validate.outputs.destination }}
+        run: |
+          mkdir -p "$(dirname "$DESTINATION")"
+          cp submitted.podspec "$DESTINATION"
+          echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push private spec
+        if: ${{ !inputs.dry_run }}
+        env:
+          DESTINATION: ${{ steps.publish.outputs.destination }}
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [[ -z "$(git status --porcelain -- "$DESTINATION")" ]]; then
+            echo "No private spec changes to commit."
+            exit 0
+          fi
+
+          git add "$DESTINATION"
+          git commit -m "Publish ${POD_NAME} ${VERSION} private spec"
+          git push --set-upstream origin "$PUBLISH_BRANCH"
+
+      - name: Open or update private spec PR
+        id: pull_request
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DESTINATION: ${{ steps.publish.outputs.destination }}
+          POD_NAME: ${{ steps.validate.outputs.pod_name }}
+          VERSION: ${{ steps.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet origin/main...HEAD; then
+            echo "No branch diff against main; skipping PR creation."
+            exit 0
+          fi
+
+          if pr_url=$(gh pr view "$PUBLISH_BRANCH" --json url --jq .url 2>/dev/null); then
+            echo "Updated existing PR: $pr_url"
+          else
+            pr_url=$(gh pr create \
+              --base main \
+              --head "$PUBLISH_BRANCH" \
+              --title "Publish ${POD_NAME} ${VERSION} private spec" \
+              --body "Publishes \`${DESTINATION}\` through the reusable private spec publisher.")
+          fi
+
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
