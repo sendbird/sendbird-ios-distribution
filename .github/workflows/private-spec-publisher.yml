@@ -16,9 +16,9 @@ on:
         required: true
         type: string
       dry_run:
-        description: Validate only; do not branch, commit, push, or open a PR
-        required: true
-        default: true
+        description: Create or update the PR without approving or enabling auto-merge
+        required: false
+        default: false
         type: boolean
 
 permissions:
@@ -76,7 +76,6 @@ jobs:
           echo "destination: $destination"
 
       - name: Prepare publish branch
-        if: ${{ !inputs.dry_run }}
         env:
           POD_NAME: ${{ steps.validate.outputs.pod_name }}
           VERSION: ${{ steps.validate.outputs.version }}
@@ -96,7 +95,6 @@ jobs:
           echo "PUBLISH_BRANCH=$branch" >> "$GITHUB_ENV"
 
       - name: Publish private spec
-        if: ${{ !inputs.dry_run }}
         id: publish
         env:
           DESTINATION: ${{ steps.validate.outputs.destination }}
@@ -106,7 +104,6 @@ jobs:
           echo "destination=$DESTINATION" >> "$GITHUB_OUTPUT"
 
       - name: Commit and push private spec
-        if: ${{ !inputs.dry_run }}
         env:
           DESTINATION: ${{ steps.publish.outputs.destination }}
           POD_NAME: ${{ steps.validate.outputs.pod_name }}
@@ -127,7 +124,6 @@ jobs:
 
       - name: Open or update private spec PR
         id: pull_request
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
           DESTINATION: ${{ steps.publish.outputs.destination }}
@@ -152,3 +148,31 @@ jobs:
           fi
 
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+      - name: Approve private spec PR
+        if: ${{ !inputs.dry_run && steps.pull_request.outputs.pr_url != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_PR_APPROVAL }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "GH_TOKEN_FOR_PR_APPROVAL is required to approve private spec PRs." >&2
+            exit 1
+          fi
+
+          gh pr review "$PUBLISH_BRANCH" \
+            --approve \
+            --body "Approved by private spec publisher automation."
+
+      - name: Enable auto-merge
+        if: ${{ !inputs.dry_run && steps.pull_request.outputs.pr_url != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh pr merge "$PUBLISH_BRANCH" \
+            --auto \
+            --squash \
+            --delete-branch
