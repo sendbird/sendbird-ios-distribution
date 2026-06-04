@@ -1,5 +1,7 @@
 name: Private Spec Publisher
 
+run-name: "Private Spec Publisher ${{ inputs.pod_name }} ${{ inputs.version }} [rid:${{ inputs.request_id }}]"
+
 on:
   workflow_dispatch:
     inputs:
@@ -20,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      request_id:
+        description: Caller-supplied correlation id, echoed into run-name so the dispatcher can locate this exact run
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -46,6 +53,7 @@ jobs:
         env:
           POD_NAME: ${{ inputs.pod_name }}
           VERSION: ${{ inputs.version }}
+          REQUEST_ID: ${{ inputs.request_id }}
         run: |
           set -euo pipefail
 
@@ -74,6 +82,7 @@ jobs:
           echo "pod: $pod_name"
           echo "version: $version"
           echo "destination: $destination"
+          echo "request_id: ${REQUEST_ID:-<none>}"
 
       - name: Prepare publish branch
         env:
