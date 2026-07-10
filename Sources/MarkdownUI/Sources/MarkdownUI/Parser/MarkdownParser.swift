@@ -250,14 +250,14 @@ extension UnsafeNode {
   ) rethrows -> ResultType? {
     cmark_gfm_core_extensions_ensure_registered()
 
+    let markdown = MarkdownSyntaxBlocklist.process(markdown)
+
     // Create a Markdown parser and attach the GitHub syntax extensions
 
     let parser = cmark_parser_new(CMARK_OPT_DEFAULT)
     defer { cmark_parser_free(parser) }
 
-    let extensionNames: Set<String>
-
-    extensionNames = ["autolink", "strikethrough", "tagfilter", "tasklist", "table"]
+    let extensionNames: Set<String> = ["autolink", "tagfilter", "tasklist", "table"]
 
     for extensionName in extensionNames {
       guard let syntaxExtension = cmark_find_syntax_extension(extensionName) else {
