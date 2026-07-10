@@ -89,30 +89,3 @@ private struct LinkModifier: ViewModifier {
     }
   }
 }
-
-extension View {
-  fileprivate func imageTap(url: URL?, alt: String, enabled: Bool) -> some View {
-    self.modifier(ImageTapModifier(url: url, alt: alt, enabled: enabled))
-  }
-}
-
-private struct ImageTapModifier: ViewModifier {
-  @Environment(\.imageTapHandler) private var imageTapHandler
-
-  let url: URL?
-  let alt: String
-  let enabled: Bool
-
-  func body(content: Content) -> some View {
-    if self.enabled, let url = self.url, let handler = self.imageTapHandler {
-      Button {
-        handler(.init(url: url, alt: self.alt))
-      } label: {
-        content
-      }
-      .buttonStyle(.plain)
-    } else {
-      content
-    }
-  }
-}
