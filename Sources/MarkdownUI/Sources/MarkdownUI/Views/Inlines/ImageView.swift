@@ -23,6 +23,7 @@ struct ImageView: View {
   private var label: some View {
     self.imageProvider.makeImage(url: self.url)
       .link(destination: self.data.destination)
+      .imageTap(url: self.url, alt: self.data.alt, enabled: self.data.destination == nil)
       .accessibilityLabel(self.data.alt)
   }
 
@@ -79,6 +80,33 @@ private struct LinkModifier: ViewModifier {
     if let url {
       Button {
         self.openURL(url)
+      } label: {
+        content
+      }
+      .buttonStyle(.plain)
+    } else {
+      content
+    }
+  }
+}
+
+extension View {
+  fileprivate func imageTap(url: URL?, alt: String, enabled: Bool) -> some View {
+    self.modifier(ImageTapModifier(url: url, alt: alt, enabled: enabled))
+  }
+}
+
+private struct ImageTapModifier: ViewModifier {
+  @Environment(\.imageTapHandler) private var imageTapHandler
+
+  let url: URL?
+  let alt: String
+  let enabled: Bool
+
+  func body(content: Content) -> some View {
+    if self.enabled, let url = self.url, let handler = self.imageTapHandler {
+      Button {
+        handler(.init(url: url, alt: self.alt))
       } label: {
         content
       }
