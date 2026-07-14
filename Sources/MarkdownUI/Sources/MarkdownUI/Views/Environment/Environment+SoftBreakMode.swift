@@ -19,5 +19,5 @@ extension EnvironmentValues {
 }
 
 private struct SoftBreakModeKey: EnvironmentKey {
-  static let defaultValue: SoftBreak.Mode = .space
+  static let defaultValue: SoftBreak.Mode = .lineBreak
 }
