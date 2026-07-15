@@ -43,6 +43,13 @@ let package = Package(
             exclude: [
                 "Documentation.docc"
             ]
+        ),
+
+        // MarkdownUI Tests (SwiftPM-only; not part of any published product)
+        .testTarget(
+            name: "SendbirdMarkdownUITests",
+            dependencies: ["SendbirdMarkdownUI"],
+            path: "Sources/MarkdownUI/Tests/MarkdownUITests"
         )
     ]
 )
