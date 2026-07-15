@@ -20,7 +20,7 @@ Pod::Spec.new do |s|
   
   # Internal dependencies (from same private repo)
   s.dependency 'SendbirdAIAgentCore', '1.16.0'
-  s.dependency 'SendbirdMarkdownUI', '~> 1.0.5'
+  s.dependency 'SendbirdMarkdownUI', '~> 1.1.0'
   s.dependency 'SendbirdSplash', '1.0.0'
   s.dependency 'SendbirdNetworkImage', '1.0.0'
   
