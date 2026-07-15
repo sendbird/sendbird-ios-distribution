@@ -23,6 +23,7 @@ struct ImageView: View {
   private var label: some View {
     self.imageProvider.makeImage(url: self.url)
       .link(destination: self.data.destination)
+      .imageTap(url: self.url, alt: self.data.alt, enabled: self.data.destination == nil)
       .accessibilityLabel(self.data.alt)
   }
 

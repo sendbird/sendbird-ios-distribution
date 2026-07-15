@@ -119,6 +119,7 @@ private struct CompactImageView: View {
     @ViewBuilder private var label: some View {
         if let url = URL(string: source, relativeTo: baseURL) {
             imageProvider.makeImage(url: url)
+                .imageTap(url: url, alt: alt, enabled: true)
                 .accessibilityLabel(alt)
         }
     }

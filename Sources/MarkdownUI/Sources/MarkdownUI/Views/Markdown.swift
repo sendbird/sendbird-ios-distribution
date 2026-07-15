@@ -191,6 +191,7 @@ import SwiftUI
 public struct Markdown: View {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.theme.text) private var text
+  @Environment(\.imageTapHandler) private var imageTapHandler
 
   private let content: MarkdownContent
   private let baseURL: URL?
@@ -219,10 +220,24 @@ public struct Markdown: View {
     .textStyle(self.text)
     .environment(\.baseURL, self.baseURL)
     .environment(\.imageBaseURL, self.imageBaseURL)
+    .environment(\.resolvedImageTapHandler, self.resolvedImageTapHandler)
   }
 
   private var blocks: [BlockNode] {
     self.content.blocks.filterImagesMatching(colorScheme: self.colorScheme)
+  }
+
+  /// Wraps the user's `markdownImageTapHandler` with the clickable image list of the
+  /// blocks this view actually renders (color-scheme filtered), so every tap site
+  /// delivers the full document context. The list is resolved lazily at tap time.
+  private var resolvedImageTapHandler: ((URL, String) -> Void)? {
+    guard let handler = self.imageTapHandler else { return nil }
+    let blocks = self.blocks
+    let imageBaseURL = self.imageBaseURL
+    return { url, alt in
+      let images = MarkdownContent(blocks: blocks).clickableImages(relativeTo: imageBaseURL)
+      handler(.resolving(url: url, alt: alt, in: images))
+    }
   }
 }
 
