@@ -25,7 +25,7 @@ platform :ios, '15.0'
 target 'YourApp' do
   use_frameworks!
   
-  pod 'SendbirdAIAgentMessenger', '>= 1.17.1'
+  pod 'SendbirdAIAgentMessenger', '>= 1.17.2'
 end
 ```
 
