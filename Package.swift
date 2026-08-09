@@ -30,9 +30,9 @@ let package = Package(
     ],
     targets: [
         // ExtensionKit Target — cross-SDK shared interfaces (protocols and value
-        // types only; no implementation code, no dependencies). VoiceProtocol
-        // lives here so AIAgentMessenger and VoiceKit can interoperate without
-        // knowing each other.
+        // types only; no implementation code, no dependencies). VoiceProvider
+        // and VoiceHTTPSender live here so AIAgentMessenger and VoiceKit can
+        // interoperate without knowing each other.
         .target(
             name: "ExtensionKit",
             path: "Sources/ExtensionKit"

@@ -8,8 +8,9 @@ import Foundation
 /// - Additive-only evolution: new protocol requirements must ship with
 ///   default implementations so that existing conformers keep compiling.
 ///
-/// VoiceProtocol (the contract between AIAgentMessenger and VoiceKit)
-/// will be declared in this module.
+/// The contract between AIAgentMessenger and VoiceKit lives here as two
+/// protocols facing opposite directions: `VoiceProvider` (VoiceKit conforms,
+/// messenger calls) and `VoiceHTTPSender` (messenger conforms, VoiceKit calls).
 public enum ExtensionKitInfo {
     /// The version of this module.
     public static let version = "0.1.0"
