@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdAIAgentMessenger'
-  s.version = '1.18.0'
+  s.version = '1.17.3'
   s.summary = 'Delight AI Agent Messenger - Main User Interface'
   s.description = 'The primary interface for Delight AI Agent with Markdown rendering, syntax highlighting, and advanced messaging capabilities. This is what users should integrate.'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/SendbirdAIAgentMessenger/Sources/**/*.swift'
   
   # Internal dependencies (from same private repo)
-  s.dependency 'SendbirdAIAgentCore', '1.18.0'
+  s.dependency 'SendbirdAIAgentCore', '1.17.3'
   s.dependency 'SendbirdMarkdownUI', '~> 1.1.0'
   s.dependency 'SendbirdSplash', '1.0.0'
   s.dependency 'SendbirdNetworkImage', '1.0.0'
