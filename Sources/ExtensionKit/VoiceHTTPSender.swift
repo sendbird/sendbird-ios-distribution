@@ -7,9 +7,9 @@ import Foundation
 /// refreshes an expired session and replays the request; VoiceKit keeps
 /// request building and response decoding.
 ///
-/// Required at `Voice.initialize(httpSender:)` — there is no state where a
-/// sender is missing. The only production conformer is the messenger's
-/// `VoiceQueueHTTPSender`; unit tests inject a mock.
+/// Handed over through `VoiceProvider.setUp(httpSender:)`, which the messenger
+/// calls once its own initialization has run. The only production conformer is
+/// the messenger's `VoiceQueueHTTPSender`; unit tests inject a mock.
 public protocol VoiceHTTPSender: AnyObject {
     /// Whether a valid authenticated user session exists.
     ///
