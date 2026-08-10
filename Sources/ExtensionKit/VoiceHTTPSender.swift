@@ -19,6 +19,22 @@ public protocol VoiceHTTPSender: AnyObject {
     /// came in the ringing push first.
     var hasValidSession: Bool { get }
 
+    /// The logged-in user, or `nil` when nobody is.
+    ///
+    /// Registration paths carry the user id (`/v3/users/{user_id}/push/…`) and
+    /// VoiceKit has no other way to learn it — it never reads the session. Same
+    /// reasoning as `hasValidSession`: the host answers one fact, no auth type
+    /// crosses the boundary.
+    var currentUserId: String? { get }
+
+    /// Set by VoiceKit; called by the host whenever the session appears, the
+    /// user changes, or the session goes away.
+    ///
+    /// This is what lets a VoIP token that arrived before login get registered
+    /// after it. The host may call it from any queue, and may call it more than
+    /// once for the same session — VoiceKit drops the repeats.
+    var onSessionChanged: (() -> Void)? { get set }
+
     /// Sends a request and returns the raw response.
     ///
     /// The completion may run on any queue.
