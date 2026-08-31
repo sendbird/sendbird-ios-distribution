@@ -257,7 +257,7 @@ extension UnsafeNode {
     let parser = cmark_parser_new(CMARK_OPT_DEFAULT)
     defer { cmark_parser_free(parser) }
 
-    let extensionNames: Set<String> = ["tagfilter", "table"]
+    let extensionNames: Set<String> = ["autolink", "tagfilter", "table"]
 
     for extensionName in extensionNames {
       guard let syntaxExtension = cmark_find_syntax_extension(extensionName) else {
