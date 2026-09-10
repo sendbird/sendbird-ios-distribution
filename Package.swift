@@ -19,12 +19,25 @@ let package = Package(
         .library(
             name: "SendbirdNetworkImage",
             targets: ["SendbirdNetworkImage"]
+        ),
+        .library(
+            name: "ExtensionKit",
+            targets: ["ExtensionKit"]
         )
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.4.0")
     ],
     targets: [
+        // ExtensionKit Target — cross-SDK shared interfaces (protocols and value
+        // types only; no implementation code, no dependencies). VoiceProvider
+        // and VoiceHTTPSender live here so AIAgentMessenger and VoiceKit can
+        // interoperate without knowing each other.
+        .target(
+            name: "ExtensionKit",
+            path: "Sources/ExtensionKit"
+        ),
+
         // NetworkImage Target
         .target(
             name: "SendbirdNetworkImage",
