@@ -35,6 +35,10 @@ Core AI Agent library with XCFramework distribution.
 - **Source**: Downloaded dynamically from [delight-ai-agent-core-ios](https://github.com/sendbird/delight-ai-agent-core-ios/releases) releases
 - **Distribution**: Dynamic download via `prepare_command` - no local storage needed
 
+### Swift Package Manager (binary)
+
+`Package.swift` also publishes `SendbirdMarkdownUI` and `SendbirdNetworkImage` for SwiftPM. From tag `0.11.0` they are **prebuilt static XCFrameworks** (binary targets) attached to the GitHub release of the same tag, together with `Splash.xcframework.zip`. This lets apps built with Xcode 27 keep an iOS 14.0 deployment target; Xcode 27 cannot compile source packages below iOS 15.0. You normally do not add this package directly — `SendbirdAIAgentCore` depends on it. The XCFrameworks are built with Xcode 26 by `scripts/build_xcframeworks.sh` (see `AGENTS.md`). CocoaPods installs are not affected.
+
 ### Usage
 
 For detailed usage instructions, examples, and API documentation, please refer to the [Delight AI Agent iOS documentation](https://github.com/sendbird/delight-ai-agent/tree/main/ios).
