@@ -14,7 +14,7 @@
 #   Xcode 26 으로 실행해야 한다. Xcode 27 은 iOS 14 타깃을 거부한다.
 #   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build_xcframeworks.sh
 
-set -e
+set -Ee
 trap 'echo "⚠️ 빌드 실패: line $LINENO"' ERR
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
