@@ -122,10 +122,12 @@ done
 
 echo ""
 echo "📦 zip + checksum (CocoaPods)"
+# 잎 pod 은 자기 릴리즈 태그(SendbirdMarkdownUI-v1.2.0 등)에 자산을 붙인다.
+# SPM 자산과 다른 릴리즈라 파일명이 같아도 겹치지 않는다.
 cd "${PODS_OUT}"
 for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
-  zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework"
-  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
+  zip -qr "${framework}.xcframework.zip" "${framework}.xcframework"
+  sum="$(swift package compute-checksum "${framework}.xcframework.zip")"
   printf "%-24s %s\n" "${framework}" "${sum}"
 done
 

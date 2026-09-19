@@ -31,9 +31,9 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     if [ ! -d "SendbirdMarkdownUI.xcframework" ]; then
-      curl -fsSL -o SendbirdMarkdownUI-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdMarkdownUI-cocoapods.xcframework.zip"
-      unzip -oq SendbirdMarkdownUI-cocoapods.xcframework.zip
-      rm SendbirdMarkdownUI-cocoapods.xcframework.zip
+      curl -fsSL -o SendbirdMarkdownUI.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdMarkdownUI-v#{s.version}/SendbirdMarkdownUI.xcframework.zip"
+      unzip -oq SendbirdMarkdownUI.xcframework.zip
+      rm SendbirdMarkdownUI.xcframework.zip
     fi
   CMD
 end

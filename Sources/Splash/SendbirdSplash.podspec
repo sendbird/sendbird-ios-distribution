@@ -29,9 +29,9 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     if [ ! -d "Splash.xcframework" ]; then
-      curl -fsSL -o Splash-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/Splash-cocoapods.xcframework.zip"
-      unzip -oq Splash-cocoapods.xcframework.zip
-      rm Splash-cocoapods.xcframework.zip
+      curl -fsSL -o Splash.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdSplash-v#{s.version}/Splash.xcframework.zip"
+      unzip -oq Splash.xcframework.zip
+      rm Splash.xcframework.zip
     fi
   CMD
 end

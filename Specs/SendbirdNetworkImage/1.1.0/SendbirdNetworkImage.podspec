@@ -26,9 +26,9 @@ Pod::Spec.new do |s|
 
   s.prepare_command = <<-CMD
     if [ ! -d "SendbirdNetworkImage.xcframework" ]; then
-      curl -fsSL -o SendbirdNetworkImage-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdNetworkImage-cocoapods.xcframework.zip"
-      unzip -oq SendbirdNetworkImage-cocoapods.xcframework.zip
-      rm SendbirdNetworkImage-cocoapods.xcframework.zip
+      curl -fsSL -o SendbirdNetworkImage.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdNetworkImage-v#{s.version}/SendbirdNetworkImage.xcframework.zip"
+      unzip -oq SendbirdNetworkImage.xcframework.zip
+      rm SendbirdNetworkImage.xcframework.zip
     fi
   CMD
 end
