@@ -24,11 +24,16 @@ Pod::Spec.new do |s|
 
   s.frameworks = 'SwiftUI', 'Combine'
 
+  # set -e 와 test 가 없으면, 프록시가 200 으로 HTML 을 주는 경우 unzip 이 실패해도
+  # rm 이 성공해 exit 0 으로 끝난다. xcframework 없이 통과하고, 아래 -d 가드 때문에
+  # 재시도해도 다시 받지 않는다.
   s.prepare_command = <<-CMD
+    set -e
     if [ ! -d "SendbirdNetworkImage.xcframework" ]; then
-      curl -fsSL -o SendbirdNetworkImage-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdNetworkImage-cocoapods.xcframework.zip"
-      unzip -oq SendbirdNetworkImage-cocoapods.xcframework.zip
-      rm SendbirdNetworkImage-cocoapods.xcframework.zip
+      curl -fsSL -o SendbirdNetworkImage.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdNetworkImage-v#{s.version}/SendbirdNetworkImage.xcframework.zip"
+      unzip -oq SendbirdNetworkImage.xcframework.zip
+      rm SendbirdNetworkImage.xcframework.zip
+      test -d "SendbirdNetworkImage.xcframework"
     fi
   CMD
 end

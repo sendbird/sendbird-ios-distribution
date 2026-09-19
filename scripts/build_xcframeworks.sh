@@ -85,9 +85,13 @@ mkdir -p "${PODS_OUT}"
 # $3 산출물 이름 (Splash 는 모듈명 Splash, 파일명 SendbirdSplash 로 다르다) / $4 NOTICE
 make_pods_xcframework() {
   local framework="$1" scheme="$2" out_name="$3" notice="$4"
+  # 동적 프레임워크라 dSYM 을 동봉해야 고객 크래시 리포트가 심볼화된다.
+  # 정적이던 SPM 쪽은 앱 dSYM 에 흡수돼서 필요 없었다.
   xcodebuild -create-xcframework \
     -framework "${BUILD}/${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -debug-symbols "${BUILD}/${scheme}-device.xcarchive/dSYMs/${framework}.framework.dSYM" \
     -framework "${BUILD}/${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -debug-symbols "${BUILD}/${scheme}-simulator.xcarchive/dSYMs/${framework}.framework.dSYM" \
     -output "${PODS_OUT}/${out_name}.xcframework" > /dev/null
   cp "${ROOT}/Licenses/${notice}" "${PODS_OUT}/${out_name}.xcframework/LICENSE"
   echo "✅ ${out_name}.xcframework (CocoaPods)"
@@ -122,10 +126,12 @@ done
 
 echo ""
 echo "📦 zip + checksum (CocoaPods)"
+# 잎 pod 은 자기 릴리즈 태그(SendbirdMarkdownUI-v1.2.0 등)에 자산을 붙인다.
+# SPM 자산과 다른 릴리즈라 파일명이 같아도 겹치지 않는다.
 cd "${PODS_OUT}"
 for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
-  zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework"
-  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
+  zip -qr "${framework}.xcframework.zip" "${framework}.xcframework"
+  sum="$(swift package compute-checksum "${framework}.xcframework.zip")"
   printf "%-24s %s\n" "${framework}" "${sum}"
 done
 

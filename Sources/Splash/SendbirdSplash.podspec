@@ -27,11 +27,16 @@ Pod::Spec.new do |s|
 
   s.frameworks = 'Foundation'
 
+  # set -e 와 test 가 없으면, 프록시가 200 으로 HTML 을 주는 경우 unzip 이 실패해도
+  # rm 이 성공해 exit 0 으로 끝난다. xcframework 없이 통과하고, 아래 -d 가드 때문에
+  # 재시도해도 다시 받지 않는다.
   s.prepare_command = <<-CMD
+    set -e
     if [ ! -d "Splash.xcframework" ]; then
-      curl -fsSL -o Splash-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/Splash-cocoapods.xcframework.zip"
-      unzip -oq Splash-cocoapods.xcframework.zip
-      rm Splash-cocoapods.xcframework.zip
+      curl -fsSL -o Splash.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdSplash-v#{s.version}/Splash.xcframework.zip"
+      unzip -oq Splash.xcframework.zip
+      rm Splash.xcframework.zip
+      test -d "Splash.xcframework"
     fi
   CMD
 end

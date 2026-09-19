@@ -29,11 +29,16 @@ Pod::Spec.new do |s|
 
   s.dependency 'SendbirdNetworkImage', '~> 1.1'
 
+  # set -e 와 test 가 없으면, 프록시가 200 으로 HTML 을 주는 경우 unzip 이 실패해도
+  # rm 이 성공해 exit 0 으로 끝난다. xcframework 없이 통과하고, 아래 -d 가드 때문에
+  # 재시도해도 다시 받지 않는다.
   s.prepare_command = <<-CMD
+    set -e
     if [ ! -d "SendbirdMarkdownUI.xcframework" ]; then
-      curl -fsSL -o SendbirdMarkdownUI-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdMarkdownUI-cocoapods.xcframework.zip"
-      unzip -oq SendbirdMarkdownUI-cocoapods.xcframework.zip
-      rm SendbirdMarkdownUI-cocoapods.xcframework.zip
+      curl -fsSL -o SendbirdMarkdownUI.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdMarkdownUI-v#{s.version}/SendbirdMarkdownUI.xcframework.zip"
+      unzip -oq SendbirdMarkdownUI.xcframework.zip
+      rm SendbirdMarkdownUI.xcframework.zip
+      test -d "SendbirdMarkdownUI.xcframework"
     fi
   CMD
 end
