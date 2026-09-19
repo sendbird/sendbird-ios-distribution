@@ -9,7 +9,7 @@ This repository is Sendbird's **private CocoaPods spec source** for iOS. Consume
 1. **CocoaPods spec repository** — versioned `*.podspec` files under `Specs/` that CocoaPods reads.
 2. **Source distribution** — Swift sources (and one downloaded XCFramework) for the pods themselves under `Sources/`.
 
-The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries.
+The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `0.11.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. The CocoaPods path is unaffected and keeps building from `Sources/`.
 
 Pods served from this repo:
 
@@ -45,7 +45,11 @@ Sources/                                    # Source code + canonical podspec pe
 Specs/                                      # CocoaPods spec mirror — what `pod install` reads
   <PodName>/<version>/<PodName>.podspec     # One file per published version
 
-Package.swift                               # SwiftPM manifest (MarkdownUI + NetworkImage only)
+Package.swift                               # SwiftPM manifest (MarkdownUI + NetworkImage, binary targets)
+binary-frameworks.yml                       # XcodeGen spec: SendbirdMarkdownUI / SendbirdNetworkImage XCFrameworks
+splash-framework.yml                        # XcodeGen spec: Splash XCFramework (run inside an upstream clone)
+scripts/build_xcframeworks.sh               # Builds the three XCFrameworks + zips + checksums
+Licenses/                                   # Upstream MIT notices copied into each XCFramework
 ```
 
 `Sources/<Pod>/<Pod>.podspec` is the **HEAD/working** podspec for each pod. `Specs/<Pod>/<version>/<Pod>.podspec` is the **immutable, version-tagged copy** that CocoaPods clients resolve. Both must agree for the active version.
@@ -55,7 +59,19 @@ Package.swift                               # SwiftPM manifest (MarkdownUI + Net
 - Swift: `5.7` (declared in every podspec and `Package.swift`).
 - iOS deployment target: `14.0` (every pod). Consumer apps in the README use `platform :ios, '15.0'`.
 - SwiftPM platforms: `iOS 14`, `macOS 12`, `tvOS 14`, `watchOS 7`, `macCatalyst 15` — applies only to `SendbirdMarkdownUI` and `SendbirdNetworkImage`. The other pods are iOS-only.
-- CocoaPods is the primary distribution channel; there is no Xcode project or workspace at the repo root.
+- CocoaPods is the primary distribution channel; there is no checked-in Xcode project. `scripts/build_xcframeworks.sh` generates one transiently with XcodeGen (`SendbirdBinaryFrameworks.xcodeproj`, git-ignored).
+
+## SwiftPM binary XCFrameworks
+
+Why: Xcode 27's iOS SDK has a 15.0 deployment floor, so it cannot build source packages for iOS 14. Host apps then fail to recompile `SendbirdAIAgentCore`'s ios14.0 `.swiftinterface` ("module 'SendbirdMarkdownUI' has a minimum deployment target of iOS 15.0"). Prebuilt XCFrameworks carry an interface pinned to `ios14.0` and pass that step.
+
+- Build with **Xcode 26** (Xcode 27 refuses the iOS 14 target):
+  `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build_xcframeworks.sh`
+- Output: `build/xcframeworks/{SendbirdMarkdownUI,SendbirdNetworkImage,Splash}.xcframework{,.zip}` and `checksums.env`.
+- `SendbirdMarkdownUI` compiles the vendored `cmark-gfm` C sources into the same static library; there is no separate cmark package.
+- `Splash` is built from a fresh clone of upstream `JohnSundell/Splash` at `SPLASH_TAG` (0.16.0), **not** from `Sources/Splash/` (that fork is CocoaPods-only). Its `binaryTarget` is declared in `delight-ai-agent-core-ios/Package.swift`; only the zip lives on this repo's release.
+- Static libraries are prelinked with `GENERATE_MASTER_OBJECT_FILE=YES` so protocol-conformance-only objects are not dropped by archive linking.
+- The release CI in `ai-agent-ios` runs this script, writes the checksums into `Package.swift`, and uploads the three zips to the GitHub release of the SwiftPM tag (`DISTRIBUTION_PACKAGE_VERSION` in `ai-agent-ios/Configurations/Base.xcconfig`). The `0000…` checksums on a working branch are placeholders.
 
 ## Adding a new release
 
