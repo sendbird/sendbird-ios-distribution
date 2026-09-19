@@ -74,6 +74,36 @@ cp "${ROOT}/splash-framework.yml" "${SPLASH_SRC}/"
 archive_slices "SplashBinary.xcodeproj" "Splash" "${SPLASH_SRC}"
 make_xcframework "Splash" "Splash" "SendbirdSplash-NOTICE.txt"
 
+# --- CocoaPods 용 ---------------------------------------------------------------
+# 고객이 use_frameworks! 로 통합하므로 동적이어야 한다. 정적 vendored_frameworks
+# 를 섞으면 pod install 이 거부한다. Splash 는 이 레포의 포크를 쓴다.
+# 자세한 이유는 binary-frameworks-cocoapods.yml 주석 참조.
+PODS_OUT="${BUILD}/xcframeworks-cocoapods"
+mkdir -p "${PODS_OUT}"
+
+# $1 아카이브 안의 프레임워크 이름 / $2 archive_slices 에 쓴 스킴 /
+# $3 산출물 이름 (Splash 는 모듈명 Splash, 파일명 SendbirdSplash 로 다르다) / $4 NOTICE
+make_pods_xcframework() {
+  local framework="$1" scheme="$2" out_name="$3" notice="$4"
+  xcodebuild -create-xcframework \
+    -framework "${BUILD}/${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -framework "${BUILD}/${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -output "${PODS_OUT}/${out_name}.xcframework" > /dev/null
+  cp "${ROOT}/Licenses/${notice}" "${PODS_OUT}/${out_name}.xcframework/LICENSE"
+  echo "✅ ${out_name}.xcframework (CocoaPods)"
+}
+
+echo ""
+echo "🔨 CocoaPods 용 (dynamic)"
+( cd "${ROOT}" && xcodegen -s binary-frameworks-cocoapods.yml > /dev/null )
+archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdMarkdownUI" "${ROOT}"
+make_pods_xcframework "SendbirdMarkdownUI"   "SendbirdMarkdownUI" "SendbirdMarkdownUI"   "SendbirdMarkdownUI-NOTICE.txt"
+make_pods_xcframework "SendbirdNetworkImage" "SendbirdMarkdownUI" "SendbirdNetworkImage" "SendbirdNetworkImage-NOTICE.txt"
+archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdSplash" "${ROOT}"
+# 산출물 이름은 Splash.xcframework 다. CocoaPods 는 xcframework 파일명으로
+# -framework 를 만들기 때문에 안쪽 Splash.framework 와 같아야 한다.
+make_pods_xcframework "Splash" "SendbirdSplash" "Splash" "SendbirdSplash-NOTICE.txt"
+
 echo ""
 echo "📦 zip + checksum"
 cd "${OUT}"
@@ -91,4 +121,14 @@ for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
 done
 
 echo ""
+echo "📦 zip + checksum (CocoaPods)"
+cd "${PODS_OUT}"
+for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
+  zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework"
+  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
+  printf "%-24s %s\n" "${framework}" "${sum}"
+done
+
+echo ""
 echo "✅ 완료: ${OUT}"
+echo "✅ 완료: ${PODS_OUT}"
