@@ -59,7 +59,7 @@ Licenses/                                   # Upstream MIT notices copied into e
 - Swift: `5.7` (declared in every podspec and `Package.swift`).
 - iOS deployment target: `14.0` (every pod). Consumer apps in the README use `platform :ios, '15.0'`.
 - SwiftPM platforms: `iOS 14`, `macOS 12`, `tvOS 14`, `watchOS 7`, `macCatalyst 15` — applies only to `SendbirdMarkdownUI` and `SendbirdNetworkImage`. The other pods are iOS-only.
-- CocoaPods is the primary distribution channel; there is no checked-in Xcode project. `scripts/build_xcframeworks.sh` generates one transiently with XcodeGen (`SendbirdBinaryFrameworks.xcodeproj`, git-ignored).
+- CocoaPods is the primary distribution channel; there is no checked-in Xcode project. `scripts/build_xcframeworks.sh` generates two transiently with XcodeGen (`SendbirdBinaryFrameworks.xcodeproj` and `SendbirdBinaryFrameworksCocoaPods.xcodeproj`, both git-ignored).
 
 ## SwiftPM binary XCFrameworks
 
@@ -83,7 +83,7 @@ A release ships exactly one or more pods at a new version. The repeating pattern
 4. Copy the bumped podspec into `Specs/<Pod>/<version>/<Pod>.podspec` (do not move — the canonical copy in `Sources/` must remain in sync).
 5. Update README install snippets if the recommended version moved.
 6. Open the release PR. Merge commits follow the form `Release - X.Y.Z` (see `git log`).
-7. Tag each pod that was published using the form `<PodName>-v<version>` (e.g. `SendbirdAIAgentCore-v1.13.0`, `SendbirdAIAgentMessenger-v1.13.0`). The tag name is referenced by `s.source[:tag]` in every podspec, so a missing tag breaks `pod install` for that version.
+7. Tags follow the form `<PodName>-v<version>` and are referenced by `s.source[:tag]` in every podspec, so a missing tag breaks `pod install` for that version. **The release workflow creates all of them** — Core and Messenger from `4-release-distribution`, the three leaf pods from the script in step 8. Do not push any of these tags by hand: for the leaf pods a pre-existing tag makes the script stop (see step 8), and for Core and Messenger it races the release.
 8. **`SendbirdMarkdownUI`, `SendbirdNetworkImage` and `SendbirdSplash` also need a GitHub release on that tag with the binary attached.** These three vend `vendored_frameworks`, and their `prepare_command` downloads the zip from the release of the tag `s.source` already checks out.
 
    The ai-agent release workflow does this — `scripts/publish_leaf_pod_releases.sh`, run from `4-release-distribution`. It reads each podspec's `s.version`, skips a pod whose release already carries its asset, and fills in a release that exists without one. **So do not create these three tags or releases by hand.** A hand-pushed tag makes the workflow stop: GitHub's create-release API binds to an existing tag and ignores the commit the workflow asked for, so it refuses rather than tag the wrong tree.

@@ -31,11 +31,12 @@ rm -rf "${BUILD}"
 mkdir -p "${OUT}"
 
 # 한 스킴을 device / simulator 두 슬라이스로 archive 한다.
-# ARCHIVE_PREFIX 로 산출물 경로를 변형별로 가른다. 두 변형이 같은 스킴 이름을
-# 쓰기 때문에, 비워 두면 동적 빌드가 정적 빌드의 아카이브를 덮어쓴다.
-ARCHIVE_PREFIX=""
+# $4 산출물 경로 접두어. 두 변형이 같은 스킴 이름을 쓰므로 이걸로 갈라야 한다.
+# 비워 두면 두 변형이 derived data 를 공유해서, 정적 빌드가 동적 산출물을
+# 집어갈 수 있다. 전역이 아니라 인자로 받는 이유는 블록 순서가 바뀌어도
+# 조용히 틀리지 않게 하기 위해서다.
 archive_slices() {
-  local project="$1" scheme="$2" workdir="$3"
+  local project="$1" scheme="$2" workdir="$3" ARCHIVE_PREFIX="${4:-}"
   for slice in device simulator; do
     local destination="generic/platform=iOS"
     [ "${slice}" = "simulator" ] && destination="generic/platform=iOS Simulator"
@@ -57,7 +58,7 @@ archive_slices() {
 
 # archive 두 벌에서 한 프레임워크를 골라 xcframework 로 묶고 NOTICE 를 동봉한다.
 make_xcframework() {
-  local framework="$1" scheme="$2" notice="$3"
+  local framework="$1" scheme="$2" notice="$3" ARCHIVE_PREFIX="${4:-}"
   xcodebuild -create-xcframework \
     -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
     -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
@@ -91,7 +92,7 @@ mkdir -p "${PODS_OUT}"
 # $1 아카이브 안의 프레임워크 이름 / $2 archive_slices 에 쓴 스킴 /
 # $3 산출물 이름 (Splash 만 프레임워크 Splash, pod 이름 SendbirdSplash 로 갈린다) / $4 NOTICE
 make_pods_xcframework() {
-  local framework="$1" scheme="$2" out_name="$3" notice="$4"
+  local framework="$1" scheme="$2" out_name="$3" notice="$4" ARCHIVE_PREFIX="pods-"
   xcodebuild -create-xcframework \
     -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
     -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
@@ -113,12 +114,11 @@ make_pods_xcframework() {
 
 echo ""
 echo "🔨 CocoaPods 용 (dynamic)"
-ARCHIVE_PREFIX="pods-"
 ( cd "${ROOT}" && xcodegen -s binary-frameworks-cocoapods.yml > /dev/null )
-archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdMarkdownUI" "${ROOT}"
+archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdMarkdownUI" "${ROOT}" "pods-"
 make_pods_xcframework "SendbirdMarkdownUI"   "SendbirdMarkdownUI" "SendbirdMarkdownUI"   "SendbirdMarkdownUI-NOTICE.txt"
 make_pods_xcframework "SendbirdNetworkImage" "SendbirdMarkdownUI" "SendbirdNetworkImage" "SendbirdNetworkImage-NOTICE.txt"
-archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdSplash" "${ROOT}"
+archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdSplash" "${ROOT}" "pods-"
 # 산출물 이름은 Splash.xcframework 다. CocoaPods 는 xcframework 파일명으로
 # -framework 를 만들기 때문에 안쪽 Splash.framework 와 같아야 한다.
 make_pods_xcframework "Splash" "SendbirdSplash" "Splash" "SendbirdSplash-NOTICE.txt"
@@ -151,10 +151,14 @@ for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
   # zip 은 입력 하나가 없어도 0 을 반환한다. dSYMs 가 빠진 zip 은 설치는 되고
   # 심볼화만 조용히 안 되므로, 여기서 막지 않으면 드러날 데가 없다.
   [ -d "${framework}.xcframework" ] || { echo "❌ ${framework}.xcframework 없음"; exit 1; }
-  [ -d "${framework}.dSYMs" ]       || { echo "❌ ${framework}.dSYMs 없음"; exit 1; }
+  # -d 만 보면 mkdir 만 되고 cp 가 빠진 빈 디렉터리를 통과시킨다. 그러면 설치는
+  # 되고 심볼화만 조용히 안 되는, 이 가드가 막으려던 바로 그 결과가 나온다.
+  ls -d "${framework}.dSYMs/"*.framework.dSYM > /dev/null 2>&1 \
+    || { echo "❌ ${framework}.dSYMs 에 .framework.dSYM 이 없다"; exit 1; }
   zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework" "${framework}.dSYMs"
-  printf "%-34s %s\n" "${framework}-cocoapods.xcframework.zip" \
-    "$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
+  # 명령치환을 printf 인자 안에 두면 실패해도 set -e 가 잡지 못하고 빈 값이 찍힌다.
+  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
+  printf "%-34s %s\n" "${framework}-cocoapods.xcframework.zip" "${sum}"
 done
 
 echo ""
