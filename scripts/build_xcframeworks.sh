@@ -1,18 +1,14 @@
 #!/bin/bash
 #
-# SendbirdMarkdownUI / SendbirdNetworkImage / Splash 를 두 벌로 빌드한다.
-#   build/xcframeworks/            static  — SwiftPM binaryTarget 용
-#   build/xcframeworks-cocoapods/  dynamic — CocoaPods vendored_frameworks 용 (dSYM 동봉)
+# SendbirdMarkdownUI / SendbirdNetworkImage / Splash 를 static xcframework 로 빌드한다.
 #
 # Xcode 27 은 SwiftPM 소스 패키지를 iOS 15.0 미만으로 빌드하지 못한다. 그래서
 # SendbirdAIAgentCore 의 swiftinterface (ios14.0) 를 재컴파일할 때 소스 의존을
 # 찾지 못하고 실패한다. 이 스크립트가 만드는 xcframework 는 ios14.0 으로 고정된
 # swiftinterface 를 담고 있어 그 재컴파일을 통과시킨다.
 #
-# SwiftPM 쪽이 static 인 이유: SendbirdAIAgentCore.xcframework 가 이 모듈들을
-# 자기 안에 흡수한 자기완결 바이너리로 남아야 한다.
-# CocoaPods 쪽이 dynamic 인 이유: Messenger podspec 이 세 잎 pod 을 따로 의존하고,
-# use_frameworks! 가 정적 vendored 바이너리를 거부한다.
+# static 인 이유: SendbirdAIAgentCore.xcframework 가 지금처럼 이 모듈들을 자기
+# 안에 흡수한 자기완결 바이너리로 남아야 한다. CocoaPods 고객은 Core 만 받는다.
 #
 # 사용:
 #   Xcode 26 으로 실행해야 한다. Xcode 27 은 iOS 14 타깃을 거부한다.
@@ -31,12 +27,8 @@ rm -rf "${BUILD}"
 mkdir -p "${OUT}"
 
 # 한 스킴을 device / simulator 두 슬라이스로 archive 한다.
-# $4 산출물 경로 접두어. 두 변형이 같은 스킴 이름을 쓰므로 이걸로 갈라야 한다.
-# 비워 두면 두 변형이 derived data 를 공유해서, 정적 빌드가 동적 산출물을
-# 집어갈 수 있다. 전역이 아니라 인자로 받는 이유는 블록 순서가 바뀌어도
-# 조용히 틀리지 않게 하기 위해서다.
 archive_slices() {
-  local project="$1" scheme="$2" workdir="$3" ARCHIVE_PREFIX="${4:-}"
+  local project="$1" scheme="$2" workdir="$3"
   for slice in device simulator; do
     local destination="generic/platform=iOS"
     [ "${slice}" = "simulator" ] && destination="generic/platform=iOS Simulator"
@@ -46,22 +38,22 @@ archive_slices() {
         -scheme "${scheme}" \
         -configuration Release \
         -destination "${destination}" \
-        -archivePath "${BUILD}/${ARCHIVE_PREFIX}${scheme}-${slice}.xcarchive" \
-        -derivedDataPath "${BUILD}/dd-${ARCHIVE_PREFIX}${scheme}" \
+        -archivePath "${BUILD}/${scheme}-${slice}.xcarchive" \
+        -derivedDataPath "${BUILD}/dd-${scheme}" \
         SKIP_INSTALL=NO \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         CODE_SIGNING_ALLOWED=NO \
-        > "${BUILD}/${ARCHIVE_PREFIX}${scheme}-${slice}.log" 2>&1 ) \
-      || { echo "❌ ${ARCHIVE_PREFIX}${scheme} ${slice} 빌드 실패 — ${BUILD}/${ARCHIVE_PREFIX}${scheme}-${slice}.log"; exit 1; }
+        > "${BUILD}/${scheme}-${slice}.log" 2>&1 ) \
+      || { echo "❌ ${scheme} ${slice} 빌드 실패 — ${BUILD}/${scheme}-${slice}.log"; exit 1; }
   done
 }
 
 # archive 두 벌에서 한 프레임워크를 골라 xcframework 로 묶고 NOTICE 를 동봉한다.
 make_xcframework() {
-  local framework="$1" scheme="$2" notice="$3" ARCHIVE_PREFIX="${4:-}"
+  local framework="$1" scheme="$2" notice="$3"
   xcodebuild -create-xcframework \
-    -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -framework "${BUILD}/${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+    -framework "${BUILD}/${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
     -output "${OUT}/${framework}.xcframework" > /dev/null
   cp "${ROOT}/Licenses/${notice}" "${OUT}/${framework}.xcframework/LICENSE"
   echo "✅ ${framework}.xcframework"
@@ -82,47 +74,6 @@ cp "${ROOT}/splash-framework.yml" "${SPLASH_SRC}/"
 archive_slices "SplashBinary.xcodeproj" "Splash" "${SPLASH_SRC}"
 make_xcframework "Splash" "Splash" "SendbirdSplash-NOTICE.txt"
 
-# --- CocoaPods 용 ---------------------------------------------------------------
-# 고객이 use_frameworks! 로 통합하므로 동적이어야 한다. 정적 vendored_frameworks
-# 를 섞으면 pod install 이 거부한다. Splash 는 이 레포의 포크를 쓴다.
-# 자세한 이유는 binary-frameworks-cocoapods.yml 주석 참조.
-PODS_OUT="${BUILD}/xcframeworks-cocoapods"
-mkdir -p "${PODS_OUT}"
-
-# $1 아카이브 안의 프레임워크 이름 / $2 archive_slices 에 쓴 스킴 /
-# $3 산출물 이름 (Splash 만 프레임워크 Splash, pod 이름 SendbirdSplash 로 갈린다) / $4 NOTICE
-make_pods_xcframework() {
-  local framework="$1" scheme="$2" out_name="$3" notice="$4" ARCHIVE_PREFIX="pods-"
-  xcodebuild -create-xcframework \
-    -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -framework "${BUILD}/${ARCHIVE_PREFIX}${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -output "${PODS_OUT}/${out_name}.xcframework" > /dev/null
-  cp "${ROOT}/Licenses/${notice}" "${PODS_OUT}/${out_name}.xcframework/LICENSE"
-
-  # dSYM 은 xcframework 안이 아니라 형제 폴더에 둔다. CocoaPods 가 찾는 곳이
-  # xcframework 와 같은 디렉터리의 <이름>.dSYMs/ 뿐이기 때문이다
-  # (pod_target_installer.rb 의 xcframework_dsyms). 안쪽 ios-arm64/dSYMs/ 는
-  # 앱 아카이브의 dSYMs 로 복사되지 않아 고객 크래시가 심볼화되지 않는다.
-  #
-  # 슬라이스별 dSYM 이름이 같아 한 폴더에 둘 다 넣을 수 없다. 고객 크래시는
-  # 실기기에서 오므로 device 슬라이스만 넣는다.
-  mkdir -p "${PODS_OUT}/${out_name}.dSYMs"
-  cp -R "${BUILD}/${ARCHIVE_PREFIX}${scheme}-device.xcarchive/dSYMs/${framework}.framework.dSYM" \
-        "${PODS_OUT}/${out_name}.dSYMs/"
-  echo "✅ ${out_name}.xcframework + .dSYMs (CocoaPods)"
-}
-
-echo ""
-echo "🔨 CocoaPods 용 (dynamic)"
-( cd "${ROOT}" && xcodegen -s binary-frameworks-cocoapods.yml > /dev/null )
-archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdMarkdownUI" "${ROOT}" "pods-"
-make_pods_xcframework "SendbirdMarkdownUI"   "SendbirdMarkdownUI" "SendbirdMarkdownUI"   "SendbirdMarkdownUI-NOTICE.txt"
-make_pods_xcframework "SendbirdNetworkImage" "SendbirdMarkdownUI" "SendbirdNetworkImage" "SendbirdNetworkImage-NOTICE.txt"
-archive_slices "SendbirdBinaryFrameworksCocoaPods.xcodeproj" "SendbirdSplash" "${ROOT}" "pods-"
-# 산출물 이름은 Splash.xcframework 다. CocoaPods 는 xcframework 파일명으로
-# -framework 를 만들기 때문에 안쪽 Splash.framework 와 같아야 한다.
-make_pods_xcframework "Splash" "SendbirdSplash" "Splash" "SendbirdSplash-NOTICE.txt"
-
 echo ""
 echo "📦 zip + checksum"
 cd "${OUT}"
@@ -140,27 +91,4 @@ for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
 done
 
 echo ""
-echo "📦 zip + checksum (CocoaPods)"
-# 잎 pod 은 자기 릴리즈 태그(SendbirdMarkdownUI-v1.2.0 등)에 자산을 붙인다.
-# SPM 자산과 다른 릴리즈라 파일명이 같아도 겹치지 않는다.
-cd "${PODS_OUT}"
-# 파일명에 -cocoapods 를 붙여 SPM 자산과 구분한다. 내용물이 다르다(정적/동적,
-# Splash 는 업스트림/포크). 릴리즈가 달라 충돌하지는 않지만, 이름이 같으면
-# release_output 한 곳으로 모으는 자리에서 조용히 덮어쓸 여지가 생긴다.
-for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
-  # zip 은 입력 하나가 없어도 0 을 반환한다. dSYMs 가 빠진 zip 은 설치는 되고
-  # 심볼화만 조용히 안 되므로, 여기서 막지 않으면 드러날 데가 없다.
-  [ -d "${framework}.xcframework" ] || { echo "❌ ${framework}.xcframework 없음"; exit 1; }
-  # -d 만 보면 mkdir 만 되고 cp 가 빠진 빈 디렉터리를 통과시킨다. 그러면 설치는
-  # 되고 심볼화만 조용히 안 되는, 이 가드가 막으려던 바로 그 결과가 나온다.
-  ls -d "${framework}.dSYMs/"*.framework.dSYM > /dev/null 2>&1 \
-    || { echo "❌ ${framework}.dSYMs 에 .framework.dSYM 이 없다"; exit 1; }
-  zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework" "${framework}.dSYMs"
-  # 명령치환을 printf 인자 안에 두면 실패해도 set -e 가 잡지 못하고 빈 값이 찍힌다.
-  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
-  printf "%-34s %s\n" "${framework}-cocoapods.xcframework.zip" "${sum}"
-done
-
-echo ""
 echo "✅ 완료: ${OUT}"
-echo "✅ 완료: ${PODS_OUT}"
