@@ -9,7 +9,7 @@ This repository is Sendbird's **private CocoaPods spec source** for iOS. Consume
 1. **CocoaPods spec repository** — versioned `*.podspec` files under `Specs/` that CocoaPods reads.
 2. **Source distribution** — Swift sources (and one downloaded XCFramework) for the pods themselves under `Sources/`.
 
-The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `0.11.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. Since the leaf pod versions `SendbirdMarkdownUI 1.2.0` / `SendbirdNetworkImage 1.1.0` / `SendbirdSplash 1.1.0`, the CocoaPods path vends prebuilt **dynamic** XCFrameworks too — a separate set of artifacts from the SwiftPM ones. See "CocoaPods binary XCFrameworks" below.
+The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `0.11.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. Since the leaf pod versions `SendbirdMarkdownUI 1.2.0` / `SendbirdNetworkImage 1.1.0` / `SendbirdSplash 1.1.0`, the CocoaPods path vends prebuilt **dynamic** XCFrameworks too — a separate set of artifacts from the SwiftPM ones, attached to each pod's own `<PodName>-v<version>` release. See step 8 of "Adding a new release".
 
 Pods served from this repo:
 
@@ -84,15 +84,28 @@ A release ships exactly one or more pods at a new version. The repeating pattern
 5. Update README install snippets if the recommended version moved.
 6. Open the release PR. Merge commits follow the form `Release - X.Y.Z` (see `git log`).
 7. Tag each pod that was published using the form `<PodName>-v<version>` (e.g. `SendbirdAIAgentCore-v1.13.0`, `SendbirdAIAgentMessenger-v1.13.0`). The tag name is referenced by `s.source[:tag]` in every podspec, so a missing tag breaks `pod install` for that version.
-8. **For `SendbirdMarkdownUI`, `SendbirdNetworkImage` and `SendbirdSplash`, also create a GitHub release on that tag and attach the binary.** These three vend `vendored_frameworks`, and their `prepare_command` downloads `<Name>-cocoapods.xcframework.zip` from the release of the tag `s.source` already checks out. Nothing creates these automatically — the ai-agent release workflow only produces `SendbirdAIAgentCore-v*` and `SendbirdAIAgentMessenger-v*` releases, and it never touches the leaf pods.
+8. **`SendbirdMarkdownUI`, `SendbirdNetworkImage` and `SendbirdSplash` also need a GitHub release on that tag with the binary attached.** These three vend `vendored_frameworks`, and their `prepare_command` downloads the zip from the release of the tag `s.source` already checks out.
+
+   The ai-agent release workflow does this — `scripts/publish_leaf_pod_releases.sh`, run from `4-release-distribution`. It reads each podspec's `s.version`, skips a pod whose release already carries its asset, and fills in a release that exists without one. **So do not create these three tags or releases by hand.** A hand-pushed tag makes the workflow stop: GitHub's create-release API binds to an existing tag and ignores the commit the workflow asked for, so it refuses rather than tag the wrong tree.
+
+   The asset name is the *framework* name, which is not the pod name for Splash:
+
+   | pod | tag | asset |
+   |---|---|---|
+   | `SendbirdMarkdownUI` | `SendbirdMarkdownUI-v<version>` | `SendbirdMarkdownUI-cocoapods.xcframework.zip` |
+   | `SendbirdNetworkImage` | `SendbirdNetworkImage-v<version>` | `SendbirdNetworkImage-cocoapods.xcframework.zip` |
+   | `SendbirdSplash` | `SendbirdSplash-v<version>` | `Splash-cocoapods.xcframework.zip` |
+
+   To publish them outside a release (recovery, or a leaf-only bump), run the same script rather than `gh release create`, so the checks come with it:
 
    ```bash
    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build_xcframeworks.sh
-   # zips land in build/xcframeworks-cocoapods/ as <Name>-cocoapods.xcframework.zip
-   gh release create SendbirdMarkdownUI-v<version> build/xcframeworks-cocoapods/SendbirdMarkdownUI-cocoapods.xcframework.zip
+   GH_API_TOKEN=$(gh auth token) \
+   DIST_DIR=$PWD ASSET_DIR=$PWD/build/xcframeworks-cocoapods IS_DRY_RUN=true \
+     ../ai-agent-ios/scripts/publish_leaf_pod_releases.sh   # drop IS_DRY_RUN to publish
    ```
 
-   Do **not** upload `build/xcframeworks/*.zip` here — those are the static SwiftPM artifacts and belong to the SwiftPM tag release. The two sets share framework names and differ only by the `-cocoapods` suffix on the zip.
+   Never attach `build/xcframeworks/*.zip` to these releases. Those are the static SwiftPM artifacts and belong to the SwiftPM tag release. The two sets differ in linkage (static vs dynamic), in what Splash is built from (upstream vs this repo's fork), and the CocoaPods zips additionally carry a `<Framework>.dSYMs/` directory.
 9. After the tags and releases exist, run a real `pod install` against them once. Local testing with `:path =>` skips both the `s.source` tag checkout and `prepare_command`, which is where every defect in this area has appeared.
 
 Older `Specs/<Pod>/<version>/` directories are immutable history — never edit a published version's podspec in place. To fix a broken release, publish a new patch version.
@@ -189,7 +202,7 @@ From `git log`:
 - **Two podspec copies per release.** Editing only the `Sources/<Pod>/<Pod>.podspec` does not change what consumers resolve. Always update the matching `Specs/<Pod>/<version>/<Pod>.podspec` and tag.
 - **Tag naming is enforced by `s.source[:tag]`.** Use `<PodName>-v<version>`, not bare `vX.Y.Z`. Mistyped tags silently break `pod install`.
 - **Messenger ↔ Core lockstep.** Because Messenger pins Core exactly, you cannot ship a Core-only fix without a Messenger release.
-- **Leaf pod binaries are published by hand.** `SendbirdMarkdownUI` / `SendbirdNetworkImage` / `SendbirdSplash` bump their version, tag, *and* need a GitHub release with the zip attached. Bumping the version without uploading the asset breaks `pod install` at `prepare_command` — and no CI catches it.
+- **Leaf pod releases are created by the ai-agent workflow, not by hand.** `SendbirdMarkdownUI` / `SendbirdNetworkImage` / `SendbirdSplash` need a tag *and* a release carrying the zip. `publish_leaf_pod_releases.sh` creates both. Pushing one of those tags yourself stops it — the create-release API would bind to your tag and ignore the commit it asked for, so the script refuses instead.
 - **`:path =>` hides the download path.** A Podfile using `:path` never checks out `s.source` and never runs `prepare_command`. Validate leaf pod changes against a real tag, not a local path.
 - **dSYMs must sit beside the xcframework.** CocoaPods only collects `<Name>.dSYMs/` as a *sibling* of the `.xcframework` (`pod_target_installer.rb`, `xcframework_dsyms`). dSYMs placed inside the xcframework via `-debug-symbols` never reach the app archive, so customer crash reports stay unsymbolicated.
 - **Trunk dependency drift.** AIAgentCore's `SendbirdChatSDK` / `SendbirdUIMessageTemplate` ranges must stay compatible with what's on CocoaPods trunk; bumping Core without re-checking can ship a podspec that fails to resolve.
