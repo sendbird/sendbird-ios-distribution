@@ -11,7 +11,7 @@ import PackageDescription
 // 그 재컴파일을 통과한다.
 //
 // xcframework 는 scripts/build_xcframeworks.sh 가 Xcode 26 으로 만들고, 이 패키지의
-// 릴리즈 태그(예: 0.11.0)에 zip 으로 올린다. Splash.xcframework.zip 도 같은 릴리즈에
+// 릴리즈 태그(예: 1.0.0)에 zip 으로 올린다. Splash.xcframework.zip 도 같은 릴리즈에
 // 올리지만, 그 binaryTarget 은 delight-ai-agent-core-ios 의 Package.swift 가 선언한다.
 // cmark-gfm 은 SendbirdMarkdownUI 안에 정적으로 흡수돼 있어 별도 의존이 없다.
 //
@@ -40,12 +40,12 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "SendbirdMarkdownUI",
-            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdMarkdownUI.xcframework.zip",
+            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/1.0.0/SendbirdMarkdownUI.xcframework.zip",
             checksum: "0000000000000000000000000000000000000000000000000000000000000000"
         ),
         .binaryTarget(
             name: "SendbirdNetworkImage",
-            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdNetworkImage.xcframework.zip",
+            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/1.0.0/SendbirdNetworkImage.xcframework.zip",
             checksum: "0000000000000000000000000000000000000000000000000000000000000000"
         )
     ]

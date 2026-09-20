@@ -9,7 +9,7 @@ This repository is Sendbird's **private CocoaPods spec source** for iOS. Consume
 1. **CocoaPods spec repository** — versioned `*.podspec` files under `Specs/` that CocoaPods reads.
 2. **Source distribution** — Swift sources (and one downloaded XCFramework) for the pods themselves under `Sources/`.
 
-The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `0.11.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. Since the leaf pod versions `SendbirdMarkdownUI 1.2.0` / `SendbirdNetworkImage 1.1.0` / `SendbirdSplash 1.1.0`, the CocoaPods path vends prebuilt **dynamic** XCFrameworks too — a separate set of artifacts from the SwiftPM ones, attached to each pod's own `<PodName>-v<version>` release. See step 8 of "Adding a new release".
+The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `1.0.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. Since the leaf pod versions `SendbirdMarkdownUI 1.2.0` / `SendbirdNetworkImage 1.1.0` / `SendbirdSplash 1.1.0`, the CocoaPods path vends prebuilt **dynamic** XCFrameworks too — a separate set of artifacts from the SwiftPM ones, attached to each pod's own `<PodName>-v<version>` release. See step 8 of "Adding a new release".
 
 Pods served from this repo:
 
