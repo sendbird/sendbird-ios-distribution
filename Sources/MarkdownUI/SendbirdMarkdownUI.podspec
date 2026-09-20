@@ -24,6 +24,10 @@ Pod::Spec.new do |s|
   # cmark-gfm C 코드는 이 바이너리 안에 정적으로 흡수돼 있어서, 예전에 필요하던
   # private_header_files / preserve_paths / SWIFT_INCLUDE_PATHS 설정이 없어졌다.
   s.ios.vendored_frameworks = 'SendbirdMarkdownUI.xcframework'
+  # dSYM 은 vendored_frameworks 에 안 잡히므로 선언해 두지 않으면 CocoaPods 가
+  # 설치 직후 정리 단계에서 지운다. prepare_command 가 zip 에서 풀어놔도 남지 않는다.
+  # :path 로 테스트하면 그 정리를 건너뛰기 때문에 드러나지 않는다.
+  s.preserve_paths = 'SendbirdMarkdownUI.dSYMs/**/*'
 
   s.frameworks = 'SwiftUI'
 

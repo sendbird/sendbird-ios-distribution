@@ -21,6 +21,10 @@ Pod::Spec.new do |s|
   # 실패한다. 이 xcframework 의 swiftinterface 는 ios14.0 으로 고정돼 있다.
   # scripts/build_xcframeworks.sh 가 Xcode 26 으로 만든다.
   s.ios.vendored_frameworks = 'SendbirdNetworkImage.xcframework'
+  # dSYM 은 vendored_frameworks 에 안 잡히므로 선언해 두지 않으면 CocoaPods 가
+  # 설치 직후 정리 단계에서 지운다. prepare_command 가 zip 에서 풀어놔도 남지 않는다.
+  # :path 로 테스트하면 그 정리를 건너뛰기 때문에 드러나지 않는다.
+  s.preserve_paths = 'SendbirdNetworkImage.dSYMs/**/*'
 
   s.frameworks = 'SwiftUI', 'Combine'
 

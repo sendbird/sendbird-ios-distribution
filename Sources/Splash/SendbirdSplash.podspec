@@ -24,6 +24,10 @@ Pod::Spec.new do |s|
   # `any` 키워드 하이라이팅이 있고, 기존 CocoaPods 고객이 쓰던 코드와 같다.
   # SPM 이 받는 Splash.xcframework 는 업스트림 0.16.0 이라 서로 다른 자산이다.
   s.ios.vendored_frameworks = 'Splash.xcframework'
+  # dSYM 은 vendored_frameworks 에 안 잡히므로 선언해 두지 않으면 CocoaPods 가
+  # 설치 직후 정리 단계에서 지운다. prepare_command 가 zip 에서 풀어놔도 남지 않는다.
+  # :path 로 테스트하면 그 정리를 건너뛰기 때문에 드러나지 않는다.
+  s.preserve_paths = 'Splash.dSYMs/**/*'
 
   s.frameworks = 'Foundation'
 
