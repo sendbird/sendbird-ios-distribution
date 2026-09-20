@@ -24,16 +24,25 @@ Pod::Spec.new do |s|
   # cmark-gfm C 코드는 이 바이너리 안에 정적으로 흡수돼 있어서, 예전에 필요하던
   # private_header_files / preserve_paths / SWIFT_INCLUDE_PATHS 설정이 없어졌다.
   s.ios.vendored_frameworks = 'SendbirdMarkdownUI.xcframework'
+  # dSYM 은 vendored_frameworks 에 안 잡히므로 선언해 두지 않으면 CocoaPods 가
+  # 설치 직후 정리 단계에서 지운다. prepare_command 가 zip 에서 풀어놔도 남지 않는다.
+  # :path 로 테스트하면 그 정리를 건너뛰기 때문에 드러나지 않는다.
+  s.preserve_paths = 'SendbirdMarkdownUI.dSYMs/**/*'
 
   s.frameworks = 'SwiftUI'
 
-  s.dependency 'SendbirdNetworkImage', '~> 1.1'
+  s.dependency 'SendbirdNetworkImage', '1.1.0'
 
+  # CocoaPods 는 prepare_command 앞에 set -e 를 이미 붙여 실행한다
+  # (pod_source_preparer.rb). 아래 set -e 는 그 동작에 기대지 않으려는 중복이고,
+  # test -d 는 unzip 이 0 을 반환했는데 디렉터리가 없는 경우를 막는다.
   s.prepare_command = <<-CMD
+    set -e
     if [ ! -d "SendbirdMarkdownUI.xcframework" ]; then
-      curl -fsSL -o SendbirdMarkdownUI-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/0.11.0/SendbirdMarkdownUI-cocoapods.xcframework.zip"
+      curl -fsSL -o SendbirdMarkdownUI-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdMarkdownUI-v#{s.version}/SendbirdMarkdownUI-cocoapods.xcframework.zip"
       unzip -oq SendbirdMarkdownUI-cocoapods.xcframework.zip
       rm SendbirdMarkdownUI-cocoapods.xcframework.zip
+      test -d "SendbirdMarkdownUI.xcframework"
     fi
   CMD
 end
