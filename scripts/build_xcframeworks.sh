@@ -82,19 +82,26 @@ PODS_OUT="${BUILD}/xcframeworks-cocoapods"
 mkdir -p "${PODS_OUT}"
 
 # $1 아카이브 안의 프레임워크 이름 / $2 archive_slices 에 쓴 스킴 /
-# $3 산출물 이름 (Splash 는 모듈명 Splash, 파일명 SendbirdSplash 로 다르다) / $4 NOTICE
+# $3 산출물 이름 (Splash 만 프레임워크 Splash, pod 이름 SendbirdSplash 로 갈린다) / $4 NOTICE
 make_pods_xcframework() {
   local framework="$1" scheme="$2" out_name="$3" notice="$4"
-  # 동적 프레임워크라 dSYM 을 동봉해야 고객 크래시 리포트가 심볼화된다.
-  # 정적이던 SPM 쪽은 앱 dSYM 에 흡수돼서 필요 없었다.
   xcodebuild -create-xcframework \
     -framework "${BUILD}/${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -debug-symbols "${BUILD}/${scheme}-device.xcarchive/dSYMs/${framework}.framework.dSYM" \
     -framework "${BUILD}/${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -debug-symbols "${BUILD}/${scheme}-simulator.xcarchive/dSYMs/${framework}.framework.dSYM" \
     -output "${PODS_OUT}/${out_name}.xcframework" > /dev/null
   cp "${ROOT}/Licenses/${notice}" "${PODS_OUT}/${out_name}.xcframework/LICENSE"
-  echo "✅ ${out_name}.xcframework (CocoaPods)"
+
+  # dSYM 은 xcframework 안이 아니라 형제 폴더에 둔다. CocoaPods 가 찾는 곳이
+  # xcframework 와 같은 디렉터리의 <이름>.dSYMs/ 뿐이기 때문이다
+  # (pod_target_installer.rb 의 xcframework_dsyms). 안쪽 ios-arm64/dSYMs/ 는
+  # 앱 아카이브의 dSYMs 로 복사되지 않아 고객 크래시가 심볼화되지 않는다.
+  #
+  # 슬라이스별 dSYM 이름이 같아 한 폴더에 둘 다 넣을 수 없다. 고객 크래시는
+  # 실기기에서 오므로 device 슬라이스만 넣는다.
+  mkdir -p "${PODS_OUT}/${out_name}.dSYMs"
+  cp -R "${BUILD}/${scheme}-device.xcarchive/dSYMs/${framework}.framework.dSYM" \
+        "${PODS_OUT}/${out_name}.dSYMs/"
+  echo "✅ ${out_name}.xcframework + .dSYMs (CocoaPods)"
 }
 
 echo ""
@@ -129,9 +136,12 @@ echo "📦 zip + checksum (CocoaPods)"
 # 잎 pod 은 자기 릴리즈 태그(SendbirdMarkdownUI-v1.2.0 등)에 자산을 붙인다.
 # SPM 자산과 다른 릴리즈라 파일명이 같아도 겹치지 않는다.
 cd "${PODS_OUT}"
+# 파일명에 -cocoapods 를 붙여 SPM 자산과 구분한다. 내용물이 다르다(정적/동적,
+# Splash 는 업스트림/포크). 릴리즈가 달라 충돌하지는 않지만, 이름이 같으면
+# release_output 한 곳으로 모으는 자리에서 조용히 덮어쓸 여지가 생긴다.
 for framework in SendbirdMarkdownUI SendbirdNetworkImage Splash; do
-  zip -qr "${framework}.xcframework.zip" "${framework}.xcframework"
-  sum="$(swift package compute-checksum "${framework}.xcframework.zip")"
+  zip -qr "${framework}-cocoapods.xcframework.zip" "${framework}.xcframework" "${framework}.dSYMs"
+  sum="$(swift package compute-checksum "${framework}-cocoapods.xcframework.zip")"
   printf "%-24s %s\n" "${framework}" "${sum}"
 done
 
