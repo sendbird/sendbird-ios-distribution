@@ -1,43 +1,21 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdNetworkImage'
-  s.version = '1.1.0'
+  s.version = '1.0.0'
   s.summary = 'Sendbird customized NetworkImage for SwiftUI'
-  s.description = 'An image loading library for SwiftUI, customized for Delight AI Agent'
+  s.description = 'AsyncImage before iOS 14, with cache and support for custom placeholders, customized for Sendbird'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
-  s.license = { :type => 'MIT', :file => 'Licenses/SendbirdNetworkImage-NOTICE.txt' }
+  s.license = { :type => 'MIT', :file => 'LICENSE' }
   s.author = { 'Tez Park' => 'tez.park@sendbird.com' }
-
+  
   s.source = {
     :git => 'https://github.com/sendbird/sendbird-ios-distribution.git',
     :tag => "SendbirdNetworkImage-v#{s.version}"
   }
-
+  
   s.ios.deployment_target = '14.0'
   s.swift_version = '5.7'
   s.module_name = 'SendbirdNetworkImage'
-
-  # Xcode 27 의 iOS SDK 는 최소 배포 타깃이 15.0 이라 소스를 iOS 14 로 빌드하지
-  # 못한다. 그러면 SendbirdAIAgentCore 의 ios14.0 swiftinterface 를 재컴파일할 때
-  # 실패한다. 이 xcframework 의 swiftinterface 는 ios14.0 으로 고정돼 있다.
-  # scripts/build_xcframeworks.sh 가 Xcode 26 으로 만든다.
-  s.ios.vendored_frameworks = 'SendbirdNetworkImage.xcframework'
-  # dSYM 은 vendored_frameworks 에 안 잡히므로 선언해 두지 않으면 CocoaPods 가
-  # 설치 직후 정리 단계에서 지운다. prepare_command 가 zip 에서 풀어놔도 남지 않는다.
-  # :path 로 테스트하면 그 정리를 건너뛰기 때문에 드러나지 않는다.
-  s.preserve_paths = 'SendbirdNetworkImage.dSYMs/**/*'
-
+  s.source_files = 'Sources/NetworkImage/Sources/**/*.swift'
+  
   s.frameworks = 'SwiftUI', 'Combine'
-
-  # CocoaPods 는 prepare_command 앞에 set -e 를 이미 붙여 실행한다
-  # (pod_source_preparer.rb). 아래 set -e 는 그 동작에 기대지 않으려는 중복이고,
-  # test -d 는 unzip 이 0 을 반환했는데 디렉터리가 없는 경우를 막는다.
-  s.prepare_command = <<-CMD
-    set -e
-    if [ ! -d "SendbirdNetworkImage.xcframework" ]; then
-      curl -fsSL -o SendbirdNetworkImage-cocoapods.xcframework.zip "https://github.com/sendbird/sendbird-ios-distribution/releases/download/SendbirdNetworkImage-v#{s.version}/SendbirdNetworkImage-cocoapods.xcframework.zip"
-      unzip -oq SendbirdNetworkImage-cocoapods.xcframework.zip
-      rm SendbirdNetworkImage-cocoapods.xcframework.zip
-      test -d "SendbirdNetworkImage.xcframework"
-    fi
-  CMD
 end

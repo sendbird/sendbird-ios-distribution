@@ -54,4 +54,3 @@ Package.resolved
 
 # XcodeGen 이 생성하는 바이너리 빌드용 프로젝트 (scripts/build_xcframeworks.sh)
 SendbirdBinaryFrameworks.xcodeproj/
-SendbirdBinaryFrameworksCocoaPods.xcodeproj/

@@ -37,7 +37,7 @@ Core AI Agent library with XCFramework distribution.
 
 ### Swift Package Manager (binary)
 
-`Package.swift` also publishes `SendbirdMarkdownUI` and `SendbirdNetworkImage` for SwiftPM. From tag `1.0.0` they are **prebuilt static XCFrameworks** (binary targets) attached to the GitHub release of the same tag, together with `Splash.xcframework.zip`. This lets apps built with Xcode 27 keep an iOS 14.0 deployment target; Xcode 27 cannot compile source packages below iOS 15.0. You normally do not add this package directly — `SendbirdAIAgentCore` depends on it. The XCFrameworks are built with Xcode 26 by `scripts/build_xcframeworks.sh` (see `AGENTS.md`). CocoaPods installs get their own prebuilt **dynamic** XCFrameworks, attached to each leaf pod's own `<pod>-v<version>` release. They are built from the same sources but are separate artifacts — `use_frameworks!` rejects statically linked vendored binaries, and CocoaPods keeps this repo's `Sources/Splash` fork while SwiftPM uses upstream Splash.
+`Package.swift` also publishes `SendbirdMarkdownUI` and `SendbirdNetworkImage` for SwiftPM. From tag `1.0.0` they are **prebuilt static XCFrameworks** (binary targets) attached to the GitHub release of the same tag, together with `Splash.xcframework.zip`. This lets apps built with Xcode 27 keep an iOS 14.0 deployment target; Xcode 27 cannot compile source packages below iOS 15.0. You normally do not add this package directly — `SendbirdAIAgentCore` depends on it. The XCFrameworks are built with Xcode 26 by `scripts/build_xcframeworks.sh` (see `AGENTS.md`). CocoaPods installs are not affected.
 
 ### Usage
 
