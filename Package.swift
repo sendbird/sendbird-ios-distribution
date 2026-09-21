@@ -39,13 +39,13 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "SendbirdMarkdownUI",
-            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/1.0.0/SendbirdMarkdownUI.xcframework.zip",
-            checksum: "0000000000000000000000000000000000000000000000000000000000000000"
+            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/spm-test-aa-18079-35554001178/SendbirdMarkdownUI.xcframework.zip",
+            checksum: "5ea968c1b42fc0003fb23dc8a3202b9279ba48704a074893aab0ad8d2a4dc054"
         ),
         .binaryTarget(
             name: "SendbirdNetworkImage",
-            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/1.0.0/SendbirdNetworkImage.xcframework.zip",
-            checksum: "0000000000000000000000000000000000000000000000000000000000000000"
+            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/spm-test-aa-18079-35554001178/SendbirdNetworkImage.xcframework.zip",
+            checksum: "2a657db7e885ee4dd7637fd506edd1ec70efcb5ce9936549ea210db7a172adf5"
         )
     ]
 )
