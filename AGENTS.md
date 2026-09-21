@@ -92,7 +92,7 @@ Older `Specs/<Pod>/<version>/` directories are immutable history — never edit 
 These coupling rules are enforced by `s.dependency` lines, not by tooling — read them before changing any version:
 
 - `SendbirdAIAgentMessenger` → `SendbirdAIAgentCore` is pinned **exactly** (`'1.13.0'`). Bump together.
-- `SendbirdAIAgentMessenger` → `SendbirdMarkdownUI` is `~> 1.0.4`, `SendbirdSplash` is `'1.0.0'` exact, `SendbirdNetworkImage` is `'1.0.0'` exact. Bumping any of these requires re-evaluating the Messenger pin.
+- `SendbirdAIAgentMessenger` → `SendbirdMarkdownUI` is `~> 1.1.0`, `SendbirdSplash` is `'1.0.0'` exact, `SendbirdNetworkImage` is `'1.0.0'` exact. Bumping any of these requires re-evaluating the Messenger pin.
 - `SendbirdMarkdownUI` → `SendbirdNetworkImage` is `~> 1.0`.
 - `SendbirdAIAgentCore` depends on the **public CocoaPods trunk** pods `SendbirdUIMessageTemplate` (`>= 3.35.1, < 4.0`) and `SendbirdChatSDK` (`>= 4.39.2, < 5.0`). Releasing a new Core version means re-checking those ranges against current trunk releases.
 
