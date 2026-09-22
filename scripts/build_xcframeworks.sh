@@ -1,14 +1,16 @@
 #!/bin/bash
 #
-# SendbirdMarkdownUI / SendbirdNetworkImage / Splash 를 static xcframework 로 빌드한다.
+# SendbirdMarkdownUI / SendbirdNetworkImage / Splash 를 동적 xcframework 로 빌드한다.
 #
 # Xcode 27 은 SwiftPM 소스 패키지를 iOS 15.0 미만으로 빌드하지 못한다. 그래서
 # SendbirdAIAgentCore 의 swiftinterface (ios14.0) 를 재컴파일할 때 소스 의존을
 # 찾지 못하고 실패한다. 이 스크립트가 만드는 xcframework 는 ios14.0 으로 고정된
 # swiftinterface 를 담고 있어 그 재컴파일을 통과시킨다.
 #
-# static 인 이유: SendbirdAIAgentCore.xcframework 가 지금처럼 이 모듈들을 자기
-# 안에 흡수한 자기완결 바이너리로 남아야 한다. CocoaPods 고객은 Core 만 받는다.
+# 동적인 이유: static 으로 만들면 Core 가 세 모듈의 코드를 자기 안으로 흡수하고,
+# 고객 앱에는 심볼이 0개인 51KB 짜리 빈 dylib 세 개가 임베드된다. 빈 이미지라
+# dSYM 이 만들어지지 않아 App Store Connect 가 업로드마다 경고를 세 번 낸다.
+# 동적으로 만들면 여기서 만든 dSYM 이 고객 아카이브까지 따라간다.
 #
 # 사용:
 #   Xcode 26 으로 실행해야 한다. Xcode 27 은 iOS 14 타깃을 거부한다.
@@ -60,11 +62,25 @@ archive_slices() {
 }
 
 # archive 두 벌에서 한 프레임워크를 골라 xcframework 로 묶고 NOTICE 를 동봉한다.
+#
+# -debug-symbols 로 슬라이스마다 dSYM 을 같이 넣는다. 이게 없으면 고객이 앱을
+# 아카이브할 때 이 프레임워크의 dSYM 이 없어서 App Store Connect 가
+# "Upload Symbols Failed" 를 내고, 크래시 리포트도 심볼화되지 않는다.
+# SendbirdChatSDK 와 SendbirdAIAgentCore 가 쓰는 방식과 같다.
+#
+# dSYM 자체는 Release 의 DEBUG_INFORMATION_FORMAT 기본값(dwarf-with-dsym)이
+# 만든다. yml 에 따로 적지 않는다. 그 전제가 깨지면 아래 가드가 멈춘다.
 make_xcframework() {
   local framework="$1" scheme="$2" notice="$3"
-  xcodebuild -create-xcframework \
-    -framework "${BUILD}/${scheme}-device.xcarchive/Products/Library/Frameworks/${framework}.framework" \
-    -framework "${BUILD}/${scheme}-simulator.xcarchive/Products/Library/Frameworks/${framework}.framework" \
+  local args=()
+  for slice in device simulator; do
+    local archive="${BUILD}/${scheme}-${slice}.xcarchive"
+    local dsym="${archive}/dSYMs/${framework}.framework.dSYM"
+    [ -d "${dsym}" ] || { echo "❌ dSYM 이 없습니다: ${dsym}"; exit 1; }
+    args+=(-framework "${archive}/Products/Library/Frameworks/${framework}.framework")
+    args+=(-debug-symbols "${dsym}")
+  done
+  xcodebuild -create-xcframework "${args[@]}" \
     -output "${OUT}/${framework}.xcframework" > /dev/null
   cp "${ROOT}/Licenses/${notice}" "${OUT}/${framework}.xcframework/LICENSE"
   echo "✅ ${framework}.xcframework"

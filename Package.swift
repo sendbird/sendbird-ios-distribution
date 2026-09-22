@@ -15,7 +15,9 @@ import PackageDescription
 // 올리지만, 그 binaryTarget 은 delight-ai-agent-core-ios 의 Package.swift 가 선언한다.
 // cmark-gfm 은 SendbirdMarkdownUI 안에 정적으로 흡수돼 있어 별도 의존이 없다.
 //
-// CocoaPods 경로는 이 파일과 무관하다. Specs/ 의 podspec 은 계속 소스를 쓴다.
+// CocoaPods 의 잎 pod 은 계속 Sources/ 를 빌드하지만, 이 파일과 무관하지는 않다.
+// SendbirdAIAgentCore.xcframework 를 두 채널이 함께 쓰고, 그 바이너리가 이제
+// 잎 세 개를 동적으로 링크한다. AGENTS.md 의 "Linkage and the CocoaPods channel" 참고.
 
 let package = Package(
     name: "SendbirdPackages",

@@ -9,7 +9,7 @@ This repository is Sendbird's **private CocoaPods spec source** for iOS. Consume
 1. **CocoaPods spec repository** — versioned `*.podspec` files under `Specs/` that CocoaPods reads.
 2. **Source distribution** — Swift sources (and one downloaded XCFramework) for the pods themselves under `Sources/`.
 
-The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `1.0.0` these are **binary targets** (static XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. The CocoaPods path is unaffected and keeps building from `Sources/`.
+The repo additionally exposes a Swift Package (`Package.swift`) that publishes a *subset* of the pods (`SendbirdMarkdownUI`, `SendbirdNetworkImage`) as SwiftPM libraries. Since SwiftPM tag `1.0.0` these are **binary targets** (dynamic XCFrameworks attached to the GitHub release of the same tag), not source targets. See "SwiftPM binary XCFrameworks" below. The CocoaPods path keeps building from `Sources/`, but it is no longer independent of this choice — see "Linkage and the CocoaPods channel".
 
 Pods served from this repo:
 
@@ -65,13 +65,26 @@ Licenses/                                   # Upstream MIT notices copied into e
 
 Why: Xcode 27's iOS SDK has a 15.0 deployment floor, so it cannot build source packages for iOS 14. Host apps then fail to recompile `SendbirdAIAgentCore`'s ios14.0 `.swiftinterface` ("module 'SendbirdMarkdownUI' has a minimum deployment target of iOS 15.0"). Prebuilt XCFrameworks carry an interface pinned to `ios14.0` and pass that step.
 
+- **The change only takes effect from a release whose `DISTRIBUTION_PACKAGE_VERSION` is a value that has never been published.** `release-spm/1-build-sdk` looks up that tag in this repo's GitHub releases and, when it exists, downloads the attached zips instead of running this script. Re-releasing on `1.0.1` would pull the old static zips back in and relink Core against them, with nothing in the log to say the script never ran.
 - Build with **Xcode 26** (Xcode 27 refuses the iOS 14 target):
   `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build_xcframeworks.sh`
 - Output: `build/xcframeworks/{SendbirdMarkdownUI,SendbirdNetworkImage,Splash}.xcframework{,.zip}` and `checksums.env`.
-- `SendbirdMarkdownUI` compiles the vendored `cmark-gfm` C sources into the same static library; there is no separate cmark package.
+- `SendbirdMarkdownUI` compiles the vendored `cmark-gfm` C sources into the same framework binary; there is no separate cmark package.
 - `Splash` is built from a fresh clone of upstream `JohnSundell/Splash` at `SPLASH_TAG` (0.16.0), **not** from `Sources/Splash/` (that fork is CocoaPods-only). Its `binaryTarget` is declared in `delight-ai-agent-core-ios/Package.swift`; only the zip lives on this repo's release.
-- Static libraries are prelinked with `GENERATE_MASTER_OBJECT_FILE=YES` so protocol-conformance-only objects are not dropped by archive linking.
+- The three frameworks are **dynamic** (`MACH_O_TYPE = mh_dylib`), and `-create-xcframework` bundles a dSYM per slice via `-debug-symbols`. Both are load-bearing; see "Linkage and the CocoaPods channel".
 - The release CI in `ai-agent-ios` runs this script, writes the checksums into `Package.swift`, and uploads the three zips to the GitHub release of the SwiftPM tag (`DISTRIBUTION_PACKAGE_VERSION` in `ai-agent-ios/Configurations/Base.xcconfig`). The `0000…` checksums on a working branch are placeholders.
+
+### Linkage and the CocoaPods channel
+
+These three frameworks were static until 2026-09-22. Static meant `SendbirdAIAgentCore.xcframework` absorbed their code and stayed self-contained, which is why the CocoaPods channel could ignore them. It also produced a defect: Xcode still materialised a framework per SwiftPM product in the customer's app, and with nothing left to link each one came out as a ~51KB dylib exporting zero symbols. An empty image gets no dSYM, so App Store Connect warned three times on every upload (`Upload Symbols Failed`). Note that dynamic linkage does not shrink the app: measured on the same QuickStart archive, Core plus the three images went from 6,642,736 to 6,714,896 bytes, because three separate dylibs cost more than the code Core absorbed. The gain is the warnings and symbolication, not size.
+
+Dynamic linkage removes that warning. It also removes Core's self-containment, and that couples the two channels:
+
+- `SendbirdAIAgentCore.framework` now carries `LC_LOAD_DYLIB @rpath/<Name>.framework/<Name>` for all three. Anything that ships Core must also ship those three frameworks **as dynamic frameworks**. A CocoaPods consumer who drops `use_frameworks!` or sets `use_frameworks! :linkage => :static` builds the leaf pods as static libraries, so those dylibs are absent from the bundle and the app dies at launch with `dyld: Library not loaded: @rpath/SendbirdMarkdownUI.framework/SendbirdMarkdownUI`. The resilience flag below does not prevent this; it is a separate failure.
+- `SendbirdAIAgentCore.podspec` declares only `SendbirdUIMessageTemplate` and `SendbirdChatSDK`; the three leaf pods are pulled in by `SendbirdAIAgentMessenger` alone. Before a `SendbirdAIAgentCore` podspec version points at a dynamic Core, that podspec has to declare the leaf pods itself, or a `pod 'SendbirdAIAgentCore'`-only Podfile installs a Core whose dylibs are missing.
+- The CocoaPods channel serves the *same* `SendbirdAIAgentCore.xcframework`, and its leaf pods build from `Sources/`. Core is compiled against a **library-evolution** build of those modules, so the pods must be built the same way. **Before publishing a `SendbirdAIAgentCore` podspec version that points at a Core built this way**, every leaf podspec must set `BUILD_LIBRARY_FOR_DISTRIBUTION = YES` in `pod_target_xcconfig`, in a new published version, with `SendbirdAIAgentMessenger`'s pins moved to it. Without that the app dies at launch: `dyld: Symbol not found: …ImageProviderP04makeD03url…Tq` — a protocol method descriptor that only a resilient build emits. Reproduced on a simulator on 2026-09-22; the flag fixes it. As of that date the leaf podspecs do **not** carry the flag, and no published `Specs/SendbirdAIAgentCore/` version points at a dynamic Core, so the CocoaPods channel is unaffected.
+- `Splash.framework` is now a real image with install name `@rpath/Splash.framework/Splash` and bundle id `com.sendbird.Splash`. A consumer that also carries a `Splash.framework` from elsewhere (CocoaPods, Carthage, a manual embed, another vendor's SDK) ends up with two images claiming the same install name. While ours was an empty stub either winner worked; now, if theirs wins, Core fails to find its symbols at launch.
+- The pod sources and the xcframework sources must stay ABI-compatible. Changing a public declaration in `Sources/MarkdownUI`, `Sources/NetworkImage` or `Sources/Splash` and releasing the pod without rebuilding the matching binary makes pod installs crash at launch. `SendbirdSplash` is the sharpest case: the pod builds the fork in `Sources/Splash`, while the binary is built from upstream `0.16.0`. They agree today (only `SwiftGrammar.swift` differs, and no public API), and they have to keep agreeing.
 
 ## Adding a new release
 
