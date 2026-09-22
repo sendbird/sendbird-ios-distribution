@@ -23,6 +23,16 @@ OUT="${BUILD}/xcframeworks"
 SPLASH_TAG="${SPLASH_TAG:-0.16.0}"
 SPLASH_SRC="${BUILD}/splash-${SPLASH_TAG}"
 
+# Becomes CFBundleShortVersionString in each framework's Info.plist.
+# GENERATE_INFOPLIST_FILE omits the key entirely when the value is empty, and
+# App Store Connect then rejects the upload with
+# "missing the required key: CFBundleShortVersionString".
+# The release CI passes DISTRIBUTION_PACKAGE_VERSION.
+if [ -z "${MARKETING_VERSION:-}" ]; then
+  echo "❌ MARKETING_VERSION is required. Example: MARKETING_VERSION=1.0.1 $0"
+  exit 1
+fi
+
 rm -rf "${BUILD}"
 mkdir -p "${OUT}"
 
@@ -43,6 +53,7 @@ archive_slices() {
         SKIP_INSTALL=NO \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         CODE_SIGNING_ALLOWED=NO \
+        MARKETING_VERSION="${MARKETING_VERSION}" \
         > "${BUILD}/${scheme}-${slice}.log" 2>&1 ) \
       || { echo "❌ ${scheme} ${slice} 빌드 실패 — ${BUILD}/${scheme}-${slice}.log"; exit 1; }
   done
