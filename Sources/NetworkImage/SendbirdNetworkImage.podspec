@@ -18,10 +18,4 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/NetworkImage/Sources/**/*.swift'
   
   s.frameworks = 'SwiftUI', 'Combine'
-
-  # SendbirdMarkdownUI.podspec 의 같은 설정과 이유가 같다. Core 가 library evolution
-  # 이 켜진 바이너리를 보고 컴파일되므로, 소스 pod 도 같게 빌드해야 심볼이 맞는다.
-  s.pod_target_xcconfig = {
-    'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES'
-  }
 end

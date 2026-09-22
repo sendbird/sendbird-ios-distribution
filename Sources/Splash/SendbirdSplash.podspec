@@ -18,15 +18,4 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/Splash/Sources/Splash/**/*.swift'
   
   s.frameworks = 'Foundation'
-
-  # SendbirdMarkdownUI.podspec 의 같은 설정과 이유가 같다. Core 가 library evolution
-  # 이 켜진 바이너리를 보고 컴파일되므로, 소스 pod 도 같게 빌드해야 심볼이 맞는다.
-  #
-  # 주의: 이 pod 이 쓰는 Sources/Splash 는 업스트림 0.16.0 의 포크다. 바이너리
-  # Splash.xcframework 는 업스트림 원본으로 만든다. 지금은 SwiftGrammar.swift 한
-  # 파일만 다르고 public API 가 같아서 ABI 가 맞지만, 포크의 public 선언을 건드리면
-  # pod 고객이 실행 즉시 죽는다.
-  s.pod_target_xcconfig = {
-    'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES'
-  }
 end

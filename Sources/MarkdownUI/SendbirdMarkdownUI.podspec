@@ -50,11 +50,6 @@ Pod::Spec.new do |s|
   # Compiler flags for C code
   s.pod_target_xcconfig = {
     'SWIFT_INCLUDE_PATHS' => '$(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/include $(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/include',
-    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING',
-    # SendbirdAIAgentCore.xcframework 는 library evolution 이 켜진 이 모듈의 바이너리를
-    # 보고 컴파일된다. 이 pod 을 그 설정 없이 빌드하면 protocol method descriptor
-    # (…Tq) 가 나오지 않아, 앱 실행 즉시 dyld 가 심볼을 못 찾고 죽는다.
-    # 2026-09-22 에 실제 재현: ImageProvider.makeImage(url:) 의 descriptor 누락.
-    'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES'
+    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING'
   }
 end
