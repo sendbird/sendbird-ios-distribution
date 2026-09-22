@@ -14,12 +14,14 @@ settings:
     SWIFT_VERSION: "5.7"
     DEFINES_MODULE: "YES"
     GENERATE_INFOPLIST_FILE: "YES"
-    MACH_O_TYPE: staticlib
-    # 단일 오브젝트 프리링크. 아카이브 멤버 단위로 링크되면 protocol conformance
-    # 레코드만 가진 오브젝트(예: BlockNode+View.o)가 참조 심볼이 없어 버려지고,
-    # 런타임에 swift_conformsToProtocol 이 실패해 크래시한다. 한 덩어리로 묶으면
-    # 어떤 심볼이든 참조될 때 모듈 전체가 들어온다.
-    GENERATE_MASTER_OBJECT_FILE: "YES"
+    # 동적 프레임워크로 만든다. static 으로 만들면 Core 가 코드를 흡수해 버려서,
+    # 고객 앱에는 심볼이 하나도 없는 51KB 짜리 빈 dylib 이 임베드된다. 그 빈
+    # 이미지에는 디버그 정보가 없어 dSYM 도 생기지 않고, App Store Connect 가
+    # 업로드 때마다 "Upload Symbols Failed" 를 세 번 낸다.
+    MACH_O_TYPE: mh_dylib
+    DYLIB_INSTALL_NAME_BASE: "@rpath"
+    # dSYM 을 xcframework 에 동봉하려면 아카이브가 dSYM 을 만들어야 한다.
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     ENABLE_BITCODE: "NO"
     CODE_SIGNING_ALLOWED: "NO"
 
@@ -56,7 +58,11 @@ targets:
           - "**/*.in"
           - "**/module.modulemap"
     dependencies:
+      # 링크만 한다. 임베드하면 SendbirdMarkdownUI.framework 안에 NetworkImage 가
+      # 한 벌 더 들어가서, 앱이 임베드하는 것과 두 벌이 된다.
       - target: SendbirdNetworkImage
+        embed: false
+        link: true
     settings:
       base:
         PRODUCT_NAME: SendbirdMarkdownUI
@@ -74,6 +80,8 @@ targets:
       - path: Sources/MarkdownUI/Tests/MarkdownUITests
     dependencies:
       - target: SendbirdMarkdownUI
+      # 두 프레임워크가 동적이라 테스트 번들이 실행 시점에 둘 다 찾을 수 있어야 한다.
+      - target: SendbirdNetworkImage
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sendbird.SendbirdMarkdownUITests

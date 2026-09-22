@@ -11,12 +11,10 @@ settings:
     SWIFT_VERSION: "5.7"
     DEFINES_MODULE: "YES"
     GENERATE_INFOPLIST_FILE: "YES"
-    MACH_O_TYPE: staticlib
-    # 단일 오브젝트 프리링크. 아카이브 멤버 단위로 링크되면 protocol conformance
-    # 레코드만 가진 오브젝트(예: BlockNode+View.o)가 참조 심볼이 없어 버려지고,
-    # 런타임에 swift_conformsToProtocol 이 실패해 크래시한다. 한 덩어리로 묶으면
-    # 어떤 심볼이든 참조될 때 모듈 전체가 들어온다.
-    GENERATE_MASTER_OBJECT_FILE: "YES"
+    # binary-frameworks.yml 과 같은 이유로 동적 프레임워크다. 그 파일의 주석 참고.
+    MACH_O_TYPE: mh_dylib
+    DYLIB_INSTALL_NAME_BASE: "@rpath"
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     CODE_SIGNING_ALLOWED: "NO"
 targets:
   Splash:
