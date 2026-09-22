@@ -67,6 +67,9 @@ archive_slices() {
 # 아카이브할 때 이 프레임워크의 dSYM 이 없어서 App Store Connect 가
 # "Upload Symbols Failed" 를 내고, 크래시 리포트도 심볼화되지 않는다.
 # SendbirdChatSDK 와 SendbirdAIAgentCore 가 쓰는 방식과 같다.
+#
+# dSYM 자체는 Release 의 DEBUG_INFORMATION_FORMAT 기본값(dwarf-with-dsym)이
+# 만든다. yml 에 따로 적지 않는다. 그 전제가 깨지면 아래 가드가 멈춘다.
 make_xcframework() {
   local framework="$1" scheme="$2" notice="$3"
   local args=()

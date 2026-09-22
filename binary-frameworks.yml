@@ -20,8 +20,6 @@ settings:
     # 업로드 때마다 "Upload Symbols Failed" 를 세 번 낸다.
     MACH_O_TYPE: mh_dylib
     DYLIB_INSTALL_NAME_BASE: "@rpath"
-    # dSYM 을 xcframework 에 동봉하려면 아카이브가 dSYM 을 만들어야 한다.
-    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     ENABLE_BITCODE: "NO"
     CODE_SIGNING_ALLOWED: "NO"
 
@@ -58,11 +56,7 @@ targets:
           - "**/*.in"
           - "**/module.modulemap"
     dependencies:
-      # 링크만 한다. 임베드하면 SendbirdMarkdownUI.framework 안에 NetworkImage 가
-      # 한 벌 더 들어가서, 앱이 임베드하는 것과 두 벌이 된다.
       - target: SendbirdNetworkImage
-        embed: false
-        link: true
     settings:
       base:
         PRODUCT_NAME: SendbirdMarkdownUI

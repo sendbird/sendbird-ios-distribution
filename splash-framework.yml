@@ -14,7 +14,6 @@ settings:
     # binary-frameworks.yml 과 같은 이유로 동적 프레임워크다. 그 파일의 주석 참고.
     MACH_O_TYPE: mh_dylib
     DYLIB_INSTALL_NAME_BASE: "@rpath"
-    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     CODE_SIGNING_ALLOWED: "NO"
 targets:
   Splash:
