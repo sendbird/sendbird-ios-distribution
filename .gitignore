@@ -45,6 +45,12 @@ BAK/
 LocalTest/Pods/
 LocalTest/Podfile.lock
 LocalTest/*.xcworkspace
+# 스모크 테스트가 남기는 산출물. Core.xcframework 사본만 100MB 가 넘는다.
+LocalTest/build/
+LocalTest/*.xcarchive/
+LocalTest/*.xcodeproj/
+LocalTest/CoreLocal/*.xcframework/
+LocalTest/*.log
 
 # Keep example workspace contents
 !LocalTest/*.xcworkspace/contents.xcworkspacedata
