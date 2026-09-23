@@ -10,7 +10,7 @@
     "Young Hwang": "young.hwang@sendbird.com"
   },
   "source": {
-    "git": "https://github.com/smilefam/sendbird-ios-framework.git",
+    "git": "https://github.com/sendbird/sendbird-ios-framework.git",
     "tag": "v3.0.113"
   },
   "requires_arc": true,
