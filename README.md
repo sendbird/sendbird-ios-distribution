@@ -16,8 +16,29 @@ This repository contains CocoaPods specifications and source code for Sendbird's
     ├── SendbirdNetworkImage/
     ├── SendbirdSplash/
     ├── SendbirdAIAgentCore/
-    └── SendbirdAIAgentMessenger/
+    ├── SendbirdAIAgentMessenger/
+    └── SendBirdSDK/                    # Chat SDK v3 podspecs
 ```
+
+## Chat SDK v3 (SendBirdSDK)
+
+This spec repository contains `SendBirdSDK` versions `3.0.100` through `3.1.60`, including the published `-deprecated` and `-privacy` versions. Version `3.0.157.1` is excluded because its source repository has no matching tag. The podspecs fetch the existing binary from [sendbird-ios-framework](https://github.com/sendbird/sendbird-ios-framework); this repository does not host a second copy of the SDK.
+
+To install one of these versions with CocoaPods, add both spec sources at the top of your `Podfile`, then keep the SDK version your app uses:
+
+```ruby
+source 'https://github.com/sendbird/sendbird-ios-distribution.git'
+source 'https://cdn.cocoapods.org/'
+
+platform :ios, '12.0'
+use_frameworks!
+
+target 'YourApp' do
+  pod 'SendBirdSDK', '3.1.60' # Replace with your existing v3 version if different.
+end
+```
+
+The `12.0` deployment target matches the `3.1.60` example; check the podspec for the version you use. Run `pod install` and open the generated `.xcworkspace`. See the [Chat SDK v3 for iOS README](https://github.com/sendbird/sendbird-ios-framework#readme) and [v3 quickstart](https://sendbird.com/docs/chat/sdk/v3/ios/quickstart/send-first-message) for SDK usage.
 
 ## AI Agent Integration
 
