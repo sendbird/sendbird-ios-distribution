@@ -38,8 +38,6 @@ target 'YourApp' do
 end
 ```
 
-The `12.0` deployment target matches the `3.1.60` example; check the podspec for the version you use. Run `pod install` and open the generated `.xcworkspace`. See the [Chat SDK v3 for iOS README](https://github.com/sendbird/sendbird-ios-framework#readme) and [v3 quickstart](https://sendbird.com/docs/chat/sdk/v3/ios/quickstart/send-first-message) for SDK usage.
-
 ## AI Agent Integration
 
 The AI Agent modules provide conversational AI capabilities for iOS applications.
