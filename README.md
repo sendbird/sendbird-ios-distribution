@@ -22,7 +22,7 @@ This repository contains CocoaPods specifications and source code for Sendbird's
 
 ## Chat SDK v3 (SendBirdSDK)
 
-This spec repository contains `SendBirdSDK` versions `3.0.100` through `3.1.60`, including the published `-deprecated` and `-privacy` versions. Version `3.0.157.1` is excluded because its source repository has no matching tag. The podspecs fetch the existing binary from [sendbird-ios-framework](https://github.com/sendbird/sendbird-ios-framework); this repository does not host a second copy of the SDK.
+This spec repository contains `SendBirdSDK` versions `3.0.100` through `3.1.60`, including the published `-deprecated` and `-privacy` versions. The podspecs fetch the existing binary from [sendbird-ios-framework](https://github.com/sendbird/sendbird-ios-framework); this repository does not host a second copy of the SDK.
 
 To install one of these versions with CocoaPods, add both spec sources at the top of your `Podfile`, then keep the SDK version your app uses:
 
