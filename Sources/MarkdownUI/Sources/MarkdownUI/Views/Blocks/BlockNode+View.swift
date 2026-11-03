@@ -119,7 +119,7 @@ extension BlockNode: View {
     return AnyView(BlockquoteView(children: [paragraph]))
   }
 
-  private func extractTableData(from html: String) -> (alignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
+  func extractTableData(from html: String) -> (alignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
     let cleanedHTML = html
       .replacingOccurrences(of: "\n", with: " ")
       .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
@@ -157,7 +157,14 @@ extension BlockNode: View {
     }
 
     let alignments = Array(repeating: RawTableColumnAlignment.none, count: max(columnCount, 1))
-    return (alignments: alignments, rows: rows)
+    // 표 뷰는 열 수만큼 cells[column] 을 읽으므로, 셀이 모자란 행(빈 <tr>, colspan 등)은 빈 셀로 채운다.
+    // 열 수와 셀이 넘치는 행은 그대로 둔다. 종료되던 입력만 바뀌고 나머지 표는 전과 같게 그려진다.
+    let paddedRows = rows.map { row -> RawTableRow in
+      guard row.cells.count < alignments.count else { return row }
+      let padding = Array(repeating: RawTableCell(content: [.text("")]), count: alignments.count - row.cells.count)
+      return RawTableRow(cells: row.cells + padding)
+    }
+    return (alignments: alignments, rows: paddedRows)
   }
 
   private func extractRows(from html: String) -> [String] {
