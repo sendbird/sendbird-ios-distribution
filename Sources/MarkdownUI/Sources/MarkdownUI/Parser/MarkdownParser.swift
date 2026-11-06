@@ -12,20 +12,29 @@ extension Array where Element == BlockNode {
 
   func renderMarkdown() -> String {
     UnsafeNode.makeDocument(self) { document in
-      String(cString: cmark_render_commonmark(document, CMARK_OPT_DEFAULT, 0))
+      String(cmarkRenderResult: cmark_render_commonmark(document, CMARK_OPT_DEFAULT, 0))
     } ?? ""
   }
 
   func renderPlainText() -> String {
     UnsafeNode.makeDocument(self) { document in
-      String(cString: cmark_render_plaintext(document, CMARK_OPT_DEFAULT, 0))
+      String(cmarkRenderResult: cmark_render_plaintext(document, CMARK_OPT_DEFAULT, 0))
     } ?? ""
   }
 
   func renderHTML() -> String {
     UnsafeNode.makeDocument(self) { document in
-      String(cString: cmark_render_html(document, CMARK_OPT_DEFAULT, nil))
+      String(cmarkRenderResult: cmark_render_html(document, CMARK_OPT_DEFAULT, nil))
     } ?? ""
+  }
+}
+
+extension String {
+  // cmark_render_*가 돌려준 버퍼는 호출한 쪽이 해제해야 한다(cmark-gfm.h). 복사한 뒤 바로 free한다.
+  // makeDocument가 만든 문서는 기본 allocator(calloc/free)를 쓰므로 free가 맞다.
+  fileprivate init(cmarkRenderResult buffer: UnsafeMutablePointer<CChar>) {
+    defer { free(buffer) }
+    self.init(cString: buffer)
   }
 }
 
