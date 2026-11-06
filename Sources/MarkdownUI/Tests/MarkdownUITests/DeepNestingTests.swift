@@ -81,6 +81,32 @@ final class DeepNestingTests: XCTestCase {
   func testMainRenderHardBreaks() { renderOnMainThread(Self.hardBreaks) }
   func testMainRenderEmphasisRuns() { renderOnMainThread(Self.emphasisRuns) }
 
+  /// The iOS 14 renderer joins its own Text pieces. On a newer simulator InlineText never picks it,
+  /// so call it directly.
+  func testCompatRendererSoftBreaks() { renderWithCompatRenderer(Self.softBreaks) }
+  func testCompatRendererEmphasisRuns() { renderWithCompatRenderer(Self.emphasisRuns) }
+
+  private func renderWithCompatRenderer(_ markdown: String, file: StaticString = #filePath, line: UInt = #line) {
+    guard case .paragraph(let inlines) = MarkdownContent(markdown).blocks.first else {
+      return XCTFail("expected a paragraph", file: file, line: line)
+    }
+    let theme = Theme.basic
+    withRemainingStack(deviceStackBudget) {
+      let text = inlines.renderText(
+        baseURL: nil,
+        textStyles: .init(
+          code: theme.code, emphasis: theme.emphasis, strong: theme.strong,
+          strikethrough: theme.strikethrough, link: theme.link
+        ),
+        images: [:],
+        softBreakMode: .space,
+        attributes: CompatAttributeContainer()
+      )
+      let renderer = ImageRenderer(content: text.frame(width: 320))
+      XCTAssertNotNil(renderer.uiImage, file: file, line: line)
+    }
+  }
+
   // MARK: - Depth limit
 
   private func nestedQuotes(_ depth: Int, _ innermost: BlockNode) -> BlockNode {
