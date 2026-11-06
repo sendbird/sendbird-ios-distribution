@@ -56,10 +56,14 @@ final class DeepNestingTests: XCTestCase {
   }
 
   private func renderOnMainThread(_ markdown: String, file: StaticString = #filePath, line: UInt = #line) {
+    self.renderOnMainThread(MarkdownContent(markdown), file: file, line: line)
+  }
+
+  private func renderOnMainThread(_ content: MarkdownContent, file: StaticString = #filePath, line: UInt = #line) {
     withRemainingStack(deviceStackBudget) {
       // An image-only message renders at zero size before the image loads, and ImageRenderer
       // returns nil for that. The label keeps the size above zero; the point is not crashing.
-      let renderer = ImageRenderer(content: VStack { Text("label"); Markdown(markdown) }.frame(width: 320))
+      let renderer = ImageRenderer(content: VStack { Text("label"); Markdown(content) }.frame(width: 320))
       XCTAssertNotNil(renderer.uiImage, file: file, line: line)
     }
   }
@@ -118,8 +122,12 @@ final class DeepNestingTests: XCTestCase {
   }
 
   private func renderListOnMainThread(_ markdown: String, file: StaticString = #filePath, line: UInt = #line) {
+    self.renderListOnMainThread(MarkdownContent(markdown), file: file, line: line)
+  }
+
+  private func renderListOnMainThread(_ content: MarkdownContent, file: StaticString = #filePath, line: UInt = #line) {
     let start = Date()
-    self.renderOnMainThread(markdown, file: file, line: line)
+    self.renderOnMainThread(content, file: file, line: line)
     // Debug build on the simulator. After the fix each of these takes well under a second.
     XCTAssertLessThan(Date().timeIntervalSince(start), 5, "the list took too long to lay out", file: file, line: line)
   }
@@ -127,7 +135,28 @@ final class DeepNestingTests: XCTestCase {
   func testMainRenderDashes() { renderListOnMainThread(Self.dashes) }
   func testMainRenderBulletedLists() { renderListOnMainThread(Self.indented("-")) }
   func testMainRenderNumberedLists() { renderListOnMainThread(Self.indented("1.")) }
-  func testMainRenderTaskLists() { renderListOnMainThread(Self.indented("- [ ]")) }
+
+  /// The parser leaves the task list extension off, so `- [ ]` text becomes a bulleted list.
+  /// Build the task list model directly, as deep as the parser would allow, to go through
+  /// `TaskListItemView`.
+  private static let nestedTaskLists: BlockNode = (1..<maxMarkdownNestingDepth - 1).reduce(
+    .taskList(isTight: true, items: [.init(isCompleted: false, children: [.paragraph(content: [.text("item")])])])
+  ) { inner, level in
+    .taskList(isTight: true, items: [.init(isCompleted: level.isMultiple(of: 2), children: [.paragraph(content: [.text("item")]), inner])])
+  }
+
+  func testNestedTaskListsAreTaskListsWithinTheDepthLimit() {
+    var levels = 0
+    var node: BlockNode? = Self.nestedTaskLists
+    while case .taskList(_, let items) = node {
+      levels += 1
+      node = items.first?.children.last.flatMap { $0.isParagraph ? nil : $0 }
+    }
+    // Every level is a task list, and the innermost paragraph sits at the depth limit.
+    XCTAssertEqual(levels, maxMarkdownNestingDepth - 1)
+  }
+
+  func testMainRenderTaskLists() { renderListOnMainThread(MarkdownContent(blocks: [Self.nestedTaskLists])) }
 
   // MARK: - Depth limit
 
