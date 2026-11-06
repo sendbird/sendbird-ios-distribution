@@ -22,9 +22,16 @@ final class DeepNestingTests: XCTestCase {
   private static let linkText = "[" + String(repeating: "_", count: 9_997) + "x" + String(repeating: "_", count: 9_997) + "](u)"
   private static let quoteAndList = String(repeating: "> - ", count: 4_999) + "x"
 
+  /// Shallow but wide: one paragraph with about 10,000 sibling inlines. Each inline becomes one
+  /// `Text` joined onto the previous result, and SwiftUI resolves that chain recursively.
+  private static let softBreaks = String(repeating: "a\n", count: 9_999)
+  private static let hardBreaks = String(repeating: "a\\\n", count: 6_666)
+  private static let emphasisRuns = String(repeating: "*a* ", count: 4_999)
+
   private let deepInputs: [(name: String, markdown: String)] = [
     ("strong", strong), ("emphasis", emphasis), ("blockquote", blockquote),
     ("image alt", imageAlt), ("link text", linkText), ("quote and list", quoteAndList),
+    ("soft breaks", softBreaks), ("hard breaks", hardBreaks), ("emphasis runs", emphasisRuns),
   ]
 
   /// Stack left for MarkdownUI on a device: 1MB main thread minus what UIKit and SwiftUI
@@ -70,6 +77,9 @@ final class DeepNestingTests: XCTestCase {
   func testMainRenderImageAlt() { renderOnMainThread(Self.imageAlt) }
   func testMainRenderLinkText() { renderOnMainThread(Self.linkText) }
   func testMainRenderQuoteAndList() { renderOnMainThread(Self.quoteAndList) }
+  func testMainRenderSoftBreaks() { renderOnMainThread(Self.softBreaks) }
+  func testMainRenderHardBreaks() { renderOnMainThread(Self.hardBreaks) }
+  func testMainRenderEmphasisRuns() { renderOnMainThread(Self.emphasisRuns) }
 
   // MARK: - Depth limit
 
