@@ -107,6 +107,28 @@ final class DeepNestingTests: XCTestCase {
     }
   }
 
+  // MARK: - Lists only
+
+  /// Lists nested past the depth limit. Each list item used to measure its content several
+  /// times for every time its own size was asked, so the count multiplied at every level:
+  /// 18 levels of `- ` took 6 seconds and the 32 levels left after the limit never finished.
+  private static let dashes = String(repeating: "- ", count: 9_999) + "x"
+  private static func indented(_ marker: String) -> String {
+    (0..<40).map { String(repeating: "    ", count: $0) + marker + " item" }.joined(separator: "\n")
+  }
+
+  private func renderListOnMainThread(_ markdown: String, file: StaticString = #filePath, line: UInt = #line) {
+    let start = Date()
+    self.renderOnMainThread(markdown, file: file, line: line)
+    // Debug build on the simulator. After the fix each of these takes well under a second.
+    XCTAssertLessThan(Date().timeIntervalSince(start), 5, "the list took too long to lay out", file: file, line: line)
+  }
+
+  func testMainRenderDashes() { renderListOnMainThread(Self.dashes) }
+  func testMainRenderBulletedLists() { renderListOnMainThread(Self.indented("-")) }
+  func testMainRenderNumberedLists() { renderListOnMainThread(Self.indented("1.")) }
+  func testMainRenderTaskLists() { renderListOnMainThread(Self.indented("- [ ]")) }
+
   // MARK: - Depth limit
 
   private func nestedQuotes(_ depth: Int, _ innermost: BlockNode) -> BlockNode {
