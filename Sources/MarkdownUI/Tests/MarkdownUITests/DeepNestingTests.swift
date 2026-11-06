@@ -115,6 +115,33 @@ final class DeepNestingTests: XCTestCase {
     }
   }
 
+  func testHardBreakAtTheLimitIsKept() {
+    // The paragraph sits at the last kept level, so its text and line break are one level past it.
+    let quotes = String(repeating: ">", count: maxMarkdownNestingDepth - 1)
+    let content = MarkdownContent(quotes + "a  \n" + quotes + "b")
+    XCTAssertEqual(
+      content.blocks,
+      [nestedQuotes(maxMarkdownNestingDepth - 1, .paragraph(content: [.text("a"), .lineBreak, .text("b")]))]
+    )
+  }
+
+  func testTablePastTheLimitKeepsCellsAndRowsApart() {
+    let quotes = String(repeating: ">", count: maxMarkdownNestingDepth)
+    let markdown = ["| first | second |", "| --- | --- |", "| alpha | beta |"].map { quotes + $0 }.joined(separator: "\n")
+    XCTAssertEqual(
+      MarkdownContent(markdown).blocks,
+      [nestedQuotes(maxMarkdownNestingDepth, .paragraph(content: [.text("first second\nalpha beta")]))]
+    )
+  }
+
+  func testCodeBlockPastTheLimitStaysACodeBlock() {
+    let quotes = String(repeating: ">", count: maxMarkdownNestingDepth)
+    XCTAssertEqual(
+      MarkdownContent(quotes + "```swift\n" + quotes + "let a = 1\n" + quotes + "```").blocks,
+      [nestedQuotes(maxMarkdownNestingDepth, .codeBlock(fenceInfo: "swift", content: "let a = 1\n"))]
+    )
+  }
+
   // MARK: - Ordinary nesting keeps its structure
 
   func testShallowBlockquotesAreUnchanged() {

@@ -19,13 +19,19 @@ final class RenderBufferLeakTests: XCTestCase {
   }
 
   /// Bytes still allocated after calling `render` `count` times.
+  ///
+  /// The allocator statistics cover the whole process, so another thread can add noise. A leak
+  /// shows up in every round; noise does not. The smallest of three rounds is kept.
   private func retainedBytes(calls count: Int, _ render: () -> String) -> (retained: Int, outputSize: Int) {
     let outputSize = render().utf8.count  // warm-up, also allocates any one-time state
-    let before = bytesInUse()
-    for _ in 0..<count {
-      autoreleasepool { _ = render() }
+    let rounds = (0..<3).map { _ -> Int in
+      let before = bytesInUse()
+      for _ in 0..<count {
+        autoreleasepool { _ = render() }
+      }
+      return bytesInUse() - before
     }
-    return (bytesInUse() - before, outputSize)
+    return (rounds.min() ?? 0, outputSize)
   }
 
   private func assertDoesNotLeak(_ name: String, _ render: () -> String, file: StaticString = #filePath, line: UInt = #line) {

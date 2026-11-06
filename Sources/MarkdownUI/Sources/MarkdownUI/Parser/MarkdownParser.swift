@@ -46,7 +46,8 @@ extension String {
 
 extension BlockNode {
   fileprivate init?(unsafeNode: UnsafeNode, depth: Int) {
-    guard depth <= maxMarkdownNestingDepth else {
+    // 자식이 없는 노드는 재귀하지 않으므로 상한을 넘어도 그대로 둔다.
+    guard depth <= maxMarkdownNestingDepth || cmark_node_first_child(unsafeNode) == nil else {
       // 상한을 넘으면 더 내려가지 않고 글자만 모아 문단 하나로 둔다.
       let text = unsafeNode.flattenedText
       guard !text.isEmpty else { return nil }
@@ -162,7 +163,8 @@ extension RawTableCell {
 
 extension InlineNode {
   fileprivate init?(unsafeNode: UnsafeNode, depth: Int) {
-    guard depth <= maxMarkdownNestingDepth else {
+    // 글자, 줄바꿈, 코드처럼 자식이 없는 노드는 재귀하지 않으므로 상한을 넘어도 그대로 둔다.
+    guard depth <= maxMarkdownNestingDepth || cmark_node_first_child(unsafeNode) == nil else {
       // 상한을 넘으면 더 내려가지 않고 글자만 남긴다.
       let text = unsafeNode.flattenedText
       guard !text.isEmpty else { return nil }
@@ -235,10 +237,13 @@ extension UnsafeNode {
           text += " "
         case .lineBreak:
           text += "\n"
+        case .tableCell where cmark_node_previous(node) != nil:
+          // 표 칸은 공백으로 나눈다.
+          text += " "
         default:
           break
         }
-      } else if node.nodeType == .paragraph || node.nodeType == .heading {
+      } else if [.paragraph, .heading, .tableRow, .tableHead].contains(node.nodeType) {
         text += "\n"
       }
     }
