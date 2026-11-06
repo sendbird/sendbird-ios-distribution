@@ -2,10 +2,16 @@ import Foundation
 @_implementationOnly import cmark_gfm
 @_implementationOnly import cmark_gfm_extensions
 
+// 중첩 깊이 상한. 이보다 깊은 노드는 서식을 버리고 글자만 남긴다.
+// C 트리를 Swift 모델로 바꾸는 코드, SwiftUI 뷰 생성, 중첩 배열 해제가 모두 단계마다 재귀해서
+// `>`나 `**`를 수천 번 겹친 메시지가 main 스레드 스택(기기 1MB)을 넘겨 앱이 죽었다.
+// 32로 두면 2만 자 안에서 만들 수 있는 가장 깊은 입력도 렌더가 Debug 빌드에서 약 290KB로 끝난다.
+let maxMarkdownNestingDepth = 32
+
 extension Array where Element == BlockNode {
   init(markdown: String) {
     let blocks = UnsafeNode.parseMarkdown(markdown) { document in
-      document.children.compactMap(BlockNode.init(unsafeNode:))
+      document.children.compactMap { BlockNode(unsafeNode: $0, depth: 1) }
     }
     self.init(blocks ?? .init())
   }
@@ -39,35 +45,42 @@ extension String {
 }
 
 extension BlockNode {
-  fileprivate init?(unsafeNode: UnsafeNode) {
+  fileprivate init?(unsafeNode: UnsafeNode, depth: Int) {
+    guard depth <= maxMarkdownNestingDepth else {
+      // 상한을 넘으면 더 내려가지 않고 글자만 모아 문단 하나로 둔다.
+      let text = unsafeNode.flattenedText
+      guard !text.isEmpty else { return nil }
+      self = .paragraph(content: [.text(text)])
+      return
+    }
     switch unsafeNode.nodeType {
     case .blockquote:
-      self = .blockquote(children: unsafeNode.children.compactMap(BlockNode.init(unsafeNode:)))
+      self = .blockquote(children: unsafeNode.children.compactMap { BlockNode(unsafeNode: $0, depth: depth + 1) })
     case .list:
       if unsafeNode.children.contains(where: \.isTaskListItem) {
         self = .taskList(
           isTight: unsafeNode.isTightList,
-          items: unsafeNode.children.map(RawTaskListItem.init(unsafeNode:))
+          items: unsafeNode.children.map { RawTaskListItem(unsafeNode: $0, depth: depth + 1) }
         )
       } else {
         switch unsafeNode.listType {
         case CMARK_BULLET_LIST:
           self = .bulletedList(
             isTight: unsafeNode.isTightList,
-            items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+            items: unsafeNode.children.map { RawListItem(unsafeNode: $0, depth: depth + 1) }
           )
         case CMARK_ORDERED_LIST:
           self = .numberedList(
             isTight: unsafeNode.isTightList,
             start: unsafeNode.listStart,
-            items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+            items: unsafeNode.children.map { RawListItem(unsafeNode: $0, depth: depth + 1) }
           )
         default:
           // 안전한 폴백: 알 수 없는 리스트 타입은 bullet list로 처리
           debugPrint("Warning: cmark reported a list node without a list type. Treating as bullet list.")
           self = .bulletedList(
             isTight: unsafeNode.isTightList,
-            items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+            items: unsafeNode.children.map { RawListItem(unsafeNode: $0, depth: depth + 1) }
           )
         }
       }
@@ -76,16 +89,16 @@ extension BlockNode {
     case .htmlBlock:
       self = .htmlBlock(content: unsafeNode.literal ?? "")
     case .paragraph:
-      self = .paragraph(content: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
+      self = .paragraph(content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
     case .heading:
       self = .heading(
         level: unsafeNode.headingLevel,
-        content: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:))
+        content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
       )
     case .table:
       self = .table(
         columnAlignments: unsafeNode.tableAlignments,
-        rows: unsafeNode.children.map(RawTableRow.init(unsafeNode:))
+        rows: unsafeNode.children.map { RawTableRow(unsafeNode: $0, depth: depth + 1) }
       )
     case .thematicBreak:
       self = .thematicBreak
@@ -97,19 +110,19 @@ extension BlockNode {
 }
 
 extension RawListItem {
-  fileprivate init(unsafeNode: UnsafeNode) {
+  fileprivate init(unsafeNode: UnsafeNode, depth: Int) {
     guard unsafeNode.nodeType == .item else {
       // 안전한 폴백: 예상치 못한 노드 타입을 빈 list item으로 처리
         debugPrint("Warning: Expected a list item but got a '\(unsafeNode.nodeType)' instead.")
       self.init(children: [])
       return
     }
-    self.init(children: unsafeNode.children.compactMap(BlockNode.init(unsafeNode:)))
+    self.init(children: unsafeNode.children.compactMap { BlockNode(unsafeNode: $0, depth: depth) })
   }
 }
 
 extension RawTaskListItem {
-  fileprivate init(unsafeNode: UnsafeNode) {
+  fileprivate init(unsafeNode: UnsafeNode, depth: Int) {
     guard unsafeNode.nodeType == .taskListItem || unsafeNode.nodeType == .item else {
       // 안전한 폴백: 예상치 못한 노드 타입을 미완료 task item으로 처리
         debugPrint("Warning: Expected a task list item but got a '\(unsafeNode.nodeType)' instead.")
@@ -118,37 +131,44 @@ extension RawTaskListItem {
     }
     self.init(
       isCompleted: unsafeNode.isTaskListItemChecked,
-      children: unsafeNode.children.compactMap(BlockNode.init(unsafeNode:))
+      children: unsafeNode.children.compactMap { BlockNode(unsafeNode: $0, depth: depth) }
     )
   }
 }
 
 extension RawTableRow {
-  fileprivate init(unsafeNode: UnsafeNode) {
+  fileprivate init(unsafeNode: UnsafeNode, depth: Int) {
     guard unsafeNode.nodeType == .tableRow || unsafeNode.nodeType == .tableHead else {
       // 안전한 폴백: 예상치 못한 노드 타입을 빈 table row로 처리
         debugPrint("Warning: Expected a table row but got a '\(unsafeNode.nodeType)' instead.")
       self.init(cells: [])
       return
     }
-    self.init(cells: unsafeNode.children.map(RawTableCell.init(unsafeNode:)))
+    self.init(cells: unsafeNode.children.map { RawTableCell(unsafeNode: $0, depth: depth) })
   }
 }
 
 extension RawTableCell {
-  fileprivate init(unsafeNode: UnsafeNode) {
+  fileprivate init(unsafeNode: UnsafeNode, depth: Int) {
     guard unsafeNode.nodeType == .tableCell else {
       // 안전한 폴백: 예상치 못한 노드 타입을 빈 table cell로 처리
         debugPrint("Warning: Expected a table cell but got a '\(unsafeNode.nodeType)' instead.")
       self.init(content: [])
       return
     }
-    self.init(content: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
+    self.init(content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth) })
   }
 }
 
 extension InlineNode {
-  fileprivate init?(unsafeNode: UnsafeNode) {
+  fileprivate init?(unsafeNode: UnsafeNode, depth: Int) {
+    guard depth <= maxMarkdownNestingDepth else {
+      // 상한을 넘으면 더 내려가지 않고 글자만 남긴다.
+      let text = unsafeNode.flattenedText
+      guard !text.isEmpty else { return nil }
+      self = .text(text)
+      return
+    }
     switch unsafeNode.nodeType {
     case .text:
       self = .text(unsafeNode.literal ?? "")
@@ -161,20 +181,20 @@ extension InlineNode {
     case .html:
       self = .text(unsafeNode.literal ?? "")
     case .emphasis:
-      self = .emphasis(children: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
+      self = .emphasis(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
     case .strong:
-      self = .strong(children: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
+      self = .strong(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
     case .strikethrough:
-      self = .strikethrough(children: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:)))
+      self = .strikethrough(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
     case .link:
       self = .link(
         destination: unsafeNode.url ?? "",
-        children: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:))
+        children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
       )
     case .image:
       self = .image(
         source: unsafeNode.url ?? "",
-        children: unsafeNode.children.compactMap(InlineNode.init(unsafeNode:))
+        children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
       )
     default:
       assertionFailure("Unhandled node type '\(unsafeNode.nodeType)' in InlineNode.")
@@ -198,6 +218,31 @@ extension UnsafeNode {
 
   fileprivate var children: UnsafeNodeSequence {
     .init(cmark_node_first_child(self))
+  }
+
+  // 이 노드 아래의 글자를 모은다. cmark iterator는 반복문으로 돌아 깊이와 상관없이 스택을 더 쓰지 않는다.
+  fileprivate var flattenedText: String {
+    guard let iterator = cmark_iter_new(self) else { return "" }
+    defer { cmark_iter_free(iterator) }
+    var text = ""
+    while case let event = cmark_iter_next(iterator), event != CMARK_EVENT_DONE {
+      guard let node = cmark_iter_get_node(iterator) else { continue }
+      if event == CMARK_EVENT_ENTER {
+        switch node.nodeType {
+        case .text, .code, .html, .codeBlock, .htmlBlock:
+          text += node.literal ?? ""
+        case .softBreak:
+          text += " "
+        case .lineBreak:
+          text += "\n"
+        default:
+          break
+        }
+      } else if node.nodeType == .paragraph || node.nodeType == .heading {
+        text += "\n"
+      }
+    }
+    return text.trimmingCharacters(in: .newlines)
   }
 
   fileprivate var literal: String? {
