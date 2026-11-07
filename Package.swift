@@ -18,6 +18,10 @@ import PackageDescription
 // CocoaPods 의 잎 pod 은 계속 Sources/ 를 빌드하지만, 이 파일과 무관하지는 않다.
 // SendbirdAIAgentCore.xcframework 를 두 채널이 함께 쓰고, 그 바이너리가 이제
 // 잎 세 개를 동적으로 링크한다. AGENTS.md 의 "Linkage and the CocoaPods channel" 참고.
+//
+// SendbirdMessageTemplateRenderer 는 uikit-ios 의 MessageTemplate 렌더링 모듈을
+// SendbirdChatSDK / SendbirdAuthSDK 의존 없이 빌드한 xcframework 다.
+// uikit-ios 의 scripts/build_message_template_standalone_framework.sh 가 만든다.
 
 let package = Package(
     name: "SendbirdPackages",
@@ -36,6 +40,10 @@ let package = Package(
         .library(
             name: "SendbirdNetworkImage",
             targets: ["SendbirdNetworkImage"]
+        ),
+        .library(
+            name: "SendbirdMessageTemplateRenderer",
+            targets: ["SendbirdMessageTemplateRenderer"]
         )
     ],
     targets: [
@@ -48,6 +56,11 @@ let package = Package(
             name: "SendbirdNetworkImage",
             url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/1.0.2/SendbirdNetworkImage.xcframework.zip",
             checksum: "c80821c2082ce810e044582d51802ffa12b2f31cfa21edd4cd05265e35d5f1c6"
+        ),
+        .binaryTarget(
+            name: "SendbirdMessageTemplateRenderer",
+            url: "https://github.com/sendbird/sendbird-ios-distribution/releases/download/spm-test-aa-18604-acb7e39/SendbirdMessageTemplateRenderer.xcframework.zip",
+            checksum: "577b14a1e6046032df7194a1b0335cd1214e64a8a539770902dbe0d2a66d5bf1"
         )
     ]
 )

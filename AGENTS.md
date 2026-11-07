@@ -129,9 +129,10 @@ These coupling rules are enforced by `s.dependency` lines, not by tooling — re
 
 ## SwiftPM package
 
-`Package.swift` exposes only `SendbirdMarkdownUI` and `SendbirdNetworkImage`. Notes that matter when editing it:
+`Package.swift` exposes only `SendbirdMarkdownUI`, `SendbirdNetworkImage`, and `SendbirdMessageTemplateRenderer`. Notes that matter when editing it:
 
 - `swift-tools-version:5.7`.
+- `SendbirdMessageTemplateRenderer` is the uikit-ios MessageTemplate module built without SendbirdChatSDK / SendbirdAuthSDK by uikit-ios `scripts/build_message_template_standalone_framework.sh`. This repo does not build its zip.
 - Depends on the upstream `swift-cmark` Swift package (not the bundled `ThirdParty/cmark-gfm` C sources used by the CocoaPods build). The two builds resolve cmark differently — keep both in mind when changing MarkdownUI parser code.
 - The `SendbirdMarkdownUI` SwiftPM target excludes `Documentation.docc` to avoid pulling DocC sources into the package build.
 - `SendbirdAIAgentMessenger`, `SendbirdAIAgentCore`, and `SendbirdSplash` are intentionally **not** SwiftPM products. Do not add them without owner sign-off — Core is an XCFramework, Messenger depends on the trunk-only `SendbirdChatSDK`/`SendbirdUIMessageTemplate`, and Splash has not been validated for SwiftPM distribution.
