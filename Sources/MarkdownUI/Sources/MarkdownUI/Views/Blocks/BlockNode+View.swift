@@ -119,6 +119,7 @@ extension BlockNode: View {
     return AnyView(BlockquoteView(children: [paragraph]))
   }
 
+  // 칸 수 맞춤을 테스트에서 확인하려고 private를 뺐다.
   func extractTableData(from html: String) -> (alignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
     let cleanedHTML = html
       .replacingOccurrences(of: "\n", with: " ")
@@ -157,14 +158,16 @@ extension BlockNode: View {
     }
 
     let alignments = Array(repeating: RawTableColumnAlignment.none, count: max(columnCount, 1))
-    // 표 뷰는 열 수만큼 cells[column] 을 읽으므로, 셀이 모자란 행(빈 <tr>, colspan 등)은 빈 셀로 채운다.
-    // 열 수와 셀이 넘치는 행은 그대로 둔다. 종료되던 입력만 바뀌고 나머지 표는 전과 같게 그려진다.
-    let paddedRows = rows.map { row -> RawTableRow in
-      guard row.cells.count < alignments.count else { return row }
-      let padding = Array(repeating: RawTableCell(content: [.text("")]), count: alignments.count - row.cells.count)
-      return RawTableRow(cells: row.cells + padding)
+    // TableView, CompatTableView는 열 수만큼 cells[column]을 읽는다.
+    // 칸이 모자란 행은 빈 칸으로 채우고 넘치는 칸은 잘라, 행마다 칸 수를 열 수와 맞춘다(cmark pipe 표와 같은 규칙).
+    let emptyCell = RawTableCell(content: [])
+    let shapedRows = rows.map { row in
+      RawTableRow(
+        cells: Array(row.cells.prefix(alignments.count))
+          + Array(repeating: emptyCell, count: max(alignments.count - row.cells.count, 0))
+      )
     }
-    return (alignments: alignments, rows: paddedRows)
+    return (alignments: alignments, rows: shapedRows)
   }
 
   private func extractRows(from html: String) -> [String] {
