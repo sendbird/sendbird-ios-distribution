@@ -27,7 +27,7 @@ struct CompatTableView: View {
       ForEach(0..<self.rowCount, id: \.self) { row in
         HStack(alignment: .top, spacing: self.borderWidth) {
           ForEach(0..<self.columnCount, id: \.self) { column in
-            CompatTableCell(row: row, column: column, cell: self.rows[row].cells[column])
+            CompatTableCell(row: row, column: column, cell: self.cell(row: row, column: column))
               .frame(maxWidth: .infinity, alignment: self.alignment(for: column))
           }
         }
@@ -48,6 +48,12 @@ struct CompatTableView: View {
 
   private var columnCount: Int {
     self.columnAlignments.count
+  }
+
+  // 행의 셀이 열 수보다 적으면 빈 셀을 그린다. 셀을 건너뛰면 TableBounds 의 anchor 가 비어 테두리가 어긋난다.
+  private func cell(row: Int, column: Int) -> RawTableCell {
+    let cells = self.rows[row].cells
+    return cells.indices.contains(column) ? cells[column] : RawTableCell(content: [])
   }
 
   private func alignment(for column: Int) -> Alignment {
