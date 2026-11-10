@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdMarkdownUI'
-  s.version = '1.1.0'
+  s.version = '1.1.1'
   s.summary = 'Sendbird customized MarkdownUI for SwiftUI'
   s.description = 'A powerful SwiftUI library for displaying and customizing Markdown text, with swift-cmark included, customized for Delight AI Agent'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
@@ -45,11 +45,15 @@ Pod::Spec.new do |s|
   s.frameworks = 'SwiftUI'
   
   # Internal dependencies
-  s.dependency 'SendbirdNetworkImage', '~> 1.0'
-  
+  # 1.0.1 부터 library evolution 으로 빌드한다. 1.0.0 은 그렇지 않아서 하한을 올린다.
+  s.dependency 'SendbirdNetworkImage', '~> 1.0', '>= 1.0.1'
+
   # Compiler flags for C code
+  # BUILD_LIBRARY_FOR_DISTRIBUTION: SendbirdAIAgentCore 는 이 모듈을 library evolution 으로
+  # 빌드한 것에 맞춰 컴파일된다. 같은 방식으로 빌드하지 않으면 앱이 실행 직후 죽는다.
   s.pod_target_xcconfig = {
     'SWIFT_INCLUDE_PATHS' => '$(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/include $(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/include',
-    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING'
+    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING',
+    'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES'
   }
 end
