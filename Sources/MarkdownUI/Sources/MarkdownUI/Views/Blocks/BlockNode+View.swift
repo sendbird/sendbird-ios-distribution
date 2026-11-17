@@ -125,11 +125,6 @@ extension BlockNode: View {
       .replacingOccurrences(of: "\n", with: " ")
       .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
 
-    let headerPattern = "<thead[^>]*>.*?<tr[^>]*>(.*?)</tr>.*?</thead>"
-    guard let headerRegex = safeRegex(pattern: headerPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-      return (alignments: [RawTableColumnAlignment.none], rows: [])
-    }
-
     let bodyPattern = "<tbody[^>]*>(.*?)</tbody>"
     guard let bodyRegex = safeRegex(pattern: bodyPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
       return (alignments: [RawTableColumnAlignment.none], rows: [])
@@ -138,9 +133,7 @@ extension BlockNode: View {
     var rows: [RawTableRow] = []
     var columnCount = 0
 
-    if let headerMatch = headerRegex.firstMatch(in: cleanedHTML, range: NSRange(cleanedHTML.startIndex..., in: cleanedHTML)),
-       let headerRange = Range(headerMatch.range(at: 1), in: cleanedHTML) {
-      let headerContent = String(cleanedHTML[headerRange])
+    if let headerContent = extractHeaderRow(from: cleanedHTML) {
       let headerCells = extractCells(from: headerContent)
       columnCount = headerCells.count
       rows.append(RawTableRow(cells: headerCells.map { RawTableCell(content: [.text($0)]) }))
@@ -168,6 +161,19 @@ extension BlockNode: View {
       )
     }
     return (alignments: alignments, rows: shapedRows)
+  }
+
+  // <thead> 안의 첫 행을 머리글로 쓴다. </thead> 가 없으면 머리글이 없다.
+  // 예전에는 정규식 하나로 찾았는데, </thead> 가 없으면 <tr> 마다 글 끝까지 다시 훑어 행 600개에 18초가 걸렸다.
+  // 여는 태그와 닫는 태그를 한 번씩 찾아 그 사이에서만 행을 찾는다.
+  private func extractHeaderRow(from html: String) -> String? {
+    guard let open = html.range(of: "<thead", options: .caseInsensitive),
+          let openEnd = html.range(of: ">", range: open.upperBound..<html.endIndex),
+          let close = html.range(of: "</thead>", options: .caseInsensitive, range: openEnd.upperBound..<html.endIndex)
+    else {
+      return nil
+    }
+    return extractRows(from: String(html[openEnd.upperBound..<close.lowerBound])).first
   }
 
   private func extractRows(from html: String) -> [String] {
