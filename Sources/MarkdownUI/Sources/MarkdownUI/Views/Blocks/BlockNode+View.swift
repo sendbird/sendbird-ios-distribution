@@ -163,25 +163,30 @@ extension BlockNode: View {
     return (alignments: alignments, rows: shapedRows)
   }
 
-  // 첫 <thead> 뒤에서 마지막 </thead> 앞까지의 첫 행을 머리글로 쓴다. </thead> 가 없으면 머리글이 없다.
-  // 예전에는 정규식 하나로 찾았는데, </thead> 가 없으면 <tr> 마다 글 끝까지 다시 훑어 행 600개에 18초가 걸렸다.
-  // 닫는 태그를 먼저 찾아 없으면 바로 끝내고, 있으면 예전 정규식과 같은 범위에서 첫 행 하나만 찾는다.
+  // 첫 <thead> 뒤에서 마지막 </thead> 앞까지의 첫 행을 머리글로 쓴다. 예전 정규식
+  // <thead[^>]*>.*?<tr[^>]*>(.*?)</tr>.*?</thead> 와 같은 행을 고른다.
+  // 예전 정규식은 </thead> 나 </tr> 가 없으면 <tr> 마다 글 끝까지 다시 훑어, 행 600개에 18초가 걸렸다.
+  // 여기서는 <thead, >, 마지막 </thead>, <tr, >, </tr> 를 차례로 한 번씩만 찾는다.
   // 마지막 </thead> 를 쓰는 것은 속성 값이나 주석 안의 </thead> 에서 범위가 잘리지 않게 하려는 것이다.
+  // 정규식처럼 UTF-16 단위로 글자 그대로 비교한다(.literal). 그렇지 않으면 결합 문자가 붙은 > 를 건너뛴다.
   private func extractHeaderRow(from html: String) -> String? {
-    guard let open = html.range(of: "<thead", options: .caseInsensitive),
-          let openEnd = html.range(of: ">", range: open.upperBound..<html.endIndex),
-          let close = html.range(of: "</thead>", options: [.caseInsensitive, .backwards], range: openEnd.upperBound..<html.endIndex),
-          let rowRegex = safeRegex(pattern: "<tr[^>]*>(.*?)</tr>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+    let text = html as NSString
+    func find(_ target: String, from start: Int, backwards: Bool = false) -> NSRange? {
+      var options: NSString.CompareOptions = [.caseInsensitive, .literal]
+      if backwards { options.insert(.backwards) }
+      let found = text.range(of: target, options: options, range: NSRange(location: start, length: text.length - start))
+      return found.location == NSNotFound ? nil : found
+    }
+    guard let open = find("<thead", from: 0),
+          let openEnd = find(">", from: NSMaxRange(open)),
+          let close = find("</thead>", from: NSMaxRange(openEnd), backwards: true),
+          let row = find("<tr", from: NSMaxRange(openEnd)), NSMaxRange(row) <= close.location,
+          let rowStartEnd = find(">", from: NSMaxRange(row)), NSMaxRange(rowStartEnd) <= close.location,
+          let rowClose = find("</tr>", from: NSMaxRange(rowStartEnd)), NSMaxRange(rowClose) <= close.location
     else {
       return nil
     }
-    let header = String(html[openEnd.upperBound..<close.lowerBound])
-    guard let match = rowRegex.firstMatch(in: header, range: NSRange(header.startIndex..., in: header)),
-          let range = Range(match.range(at: 1), in: header)
-    else {
-      return nil
-    }
-    return String(header[range])
+    return text.substring(with: NSRange(location: NSMaxRange(rowStartEnd), length: rowClose.location - NSMaxRange(rowStartEnd)))
   }
 
   private func extractRows(from html: String) -> [String] {
