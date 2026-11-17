@@ -119,7 +119,8 @@ extension BlockNode: View {
     return AnyView(BlockquoteView(children: [paragraph]))
   }
 
-  private func extractTableData(from html: String) -> (alignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
+  // 칸 수 맞춤을 테스트에서 확인하려고 private를 뺐다.
+  func extractTableData(from html: String) -> (alignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
     let cleanedHTML = html
       .replacingOccurrences(of: "\n", with: " ")
       .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
@@ -157,7 +158,16 @@ extension BlockNode: View {
     }
 
     let alignments = Array(repeating: RawTableColumnAlignment.none, count: max(columnCount, 1))
-    return (alignments: alignments, rows: rows)
+    // TableView, CompatTableView는 열 수만큼 cells[column]을 읽는다.
+    // 칸이 모자란 행은 빈 칸으로 채우고 넘치는 칸은 잘라, 행마다 칸 수를 열 수와 맞춘다(cmark pipe 표와 같은 규칙).
+    let emptyCell = RawTableCell(content: [])
+    let shapedRows = rows.map { row in
+      RawTableRow(
+        cells: Array(row.cells.prefix(alignments.count))
+          + Array(repeating: emptyCell, count: max(alignments.count - row.cells.count, 0))
+      )
+    }
+    return (alignments: alignments, rows: shapedRows)
   }
 
   private func extractRows(from html: String) -> [String] {

@@ -25,7 +25,13 @@ extension Sequence where Element == InlineNode {
 
 @available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *)
 private struct ModernTextInlineRenderer {
-  var result = Text("")
+  // inline마다 Text를 result 뒤에 이어 붙이면 연결이 inline 수만큼 깊어지고, SwiftUI가 그 연결을 재귀로 풀다
+  // 스택이 넘친다(한 문단에 inline 약 1만 개). 조각을 모았다가 반씩 나눠 합쳐 깊이를 log2(n)으로 둔다.
+  private var pieces: [Text] = []
+
+  var result: Text {
+    Text.joinedBalanced(self.pieces[...])
+  }
 
   private let baseURL: URL?
   private let textStyles: InlineTextStyles
@@ -106,14 +112,13 @@ private struct ModernTextInlineRenderer {
 
   private mutating func renderImage(_ source: String) {
     if let image = self.images[source] {
-      self.result = self.result + Text(image)
+      self.pieces.append(Text(image))
     }
   }
 
   private mutating func defaultRender(_ inline: InlineNode) {
-    self.result =
-      self.result
-      + Text(
+    self.pieces.append(
+      Text(
         inline.renderAttributedString(
           baseURL: self.baseURL,
           textStyles: self.textStyles,
@@ -121,6 +126,7 @@ private struct ModernTextInlineRenderer {
           attributes: self.attributes
         )
       )
+    )
   }
 }
 #endif
@@ -147,7 +153,13 @@ extension Sequence where Element == InlineNode {
 }
 
 private struct TextInlineRenderer {
-  var result = Text("")
+  // inline마다 Text를 result 뒤에 이어 붙이면 연결이 inline 수만큼 깊어지고, SwiftUI가 그 연결을 재귀로 풀다
+  // 스택이 넘친다(한 문단에 inline 약 1만 개). 조각을 모았다가 반씩 나눠 합쳐 깊이를 log2(n)으로 둔다.
+  private var pieces: [Text] = []
+
+  var result: Text {
+    Text.joinedBalanced(self.pieces[...])
+  }
 
   private let baseURL: URL?
   private let textStyles: InlineTextStyles
@@ -228,14 +240,13 @@ private struct TextInlineRenderer {
 
   private mutating func renderImage(_ source: String) {
     if let image = self.images[source] {
-      self.result = self.result + Text(image)
+      self.pieces.append(Text(image))
     }
   }
 
   private mutating func defaultRender(_ inline: InlineNode) {
-    self.result =
-      self.result
-      + Text(
+    self.pieces.append(
+      Text(
         inline.renderAttributedString(
           baseURL: self.baseURL,
           textStyles: self.textStyles,
@@ -243,5 +254,21 @@ private struct TextInlineRenderer {
           attributes: self.attributes
         )
       )
+    )
+  }
+}
+
+extension Text {
+  // 순서는 그대로 두고 반씩 나눠 합친다. 조각이 n개면 연결 깊이가 log2(n)이다. 테스트에서 부르려고 internal로 둔다.
+  static func joinedBalanced(_ pieces: ArraySlice<Text>) -> Text {
+    switch pieces.count {
+    case 0:
+      return Text("")
+    case 1:
+      return pieces[pieces.startIndex]
+    default:
+      let middle = pieces.startIndex + pieces.count / 2
+      return self.joinedBalanced(pieces[..<middle]) + self.joinedBalanced(pieces[middle...])
+    }
   }
 }
