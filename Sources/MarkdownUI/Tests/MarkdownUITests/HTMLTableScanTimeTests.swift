@@ -118,5 +118,7 @@ final class HTMLTableScanTimeTests: XCTestCase {
     XCTAssertEqual(tableData(afterThead).rows.first.map(texts), ["A"])
     let afterClose = "<table><thead><tr><th>A</th></tr></thead>\u{0301}<tbody><tr><td>1</td></tr></tbody></table>"
     XCTAssertEqual(tableData(afterClose).rows.first.map(texts), ["A"])
+    let atRowStart = "<table><thead><tr>\u{0301}<th>A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>"
+    XCTAssertEqual(tableData(atRowStart).rows.map(texts), [["A"], ["1"]])
   }
 }
