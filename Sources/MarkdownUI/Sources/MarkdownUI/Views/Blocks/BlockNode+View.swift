@@ -163,17 +163,25 @@ extension BlockNode: View {
     return (alignments: alignments, rows: shapedRows)
   }
 
-  // <thead> 안의 첫 행을 머리글로 쓴다. </thead> 가 없으면 머리글이 없다.
+  // 첫 <thead> 뒤에서 마지막 </thead> 앞까지의 첫 행을 머리글로 쓴다. </thead> 가 없으면 머리글이 없다.
   // 예전에는 정규식 하나로 찾았는데, </thead> 가 없으면 <tr> 마다 글 끝까지 다시 훑어 행 600개에 18초가 걸렸다.
-  // 여는 태그와 닫는 태그를 한 번씩 찾아 그 사이에서만 행을 찾는다.
+  // 닫는 태그를 먼저 찾아 없으면 바로 끝내고, 있으면 예전 정규식과 같은 범위에서 첫 행 하나만 찾는다.
+  // 마지막 </thead> 를 쓰는 것은 속성 값이나 주석 안의 </thead> 에서 범위가 잘리지 않게 하려는 것이다.
   private func extractHeaderRow(from html: String) -> String? {
     guard let open = html.range(of: "<thead", options: .caseInsensitive),
           let openEnd = html.range(of: ">", range: open.upperBound..<html.endIndex),
-          let close = html.range(of: "</thead>", options: .caseInsensitive, range: openEnd.upperBound..<html.endIndex)
+          let close = html.range(of: "</thead>", options: [.caseInsensitive, .backwards], range: openEnd.upperBound..<html.endIndex),
+          let rowRegex = safeRegex(pattern: "<tr[^>]*>(.*?)</tr>", options: [.caseInsensitive, .dotMatchesLineSeparators])
     else {
       return nil
     }
-    return extractRows(from: String(html[openEnd.upperBound..<close.lowerBound])).first
+    let header = String(html[openEnd.upperBound..<close.lowerBound])
+    guard let match = rowRegex.firstMatch(in: header, range: NSRange(header.startIndex..., in: header)),
+          let range = Range(match.range(at: 1), in: header)
+    else {
+      return nil
+    }
+    return String(header[range])
   }
 
   private func extractRows(from html: String) -> [String] {
