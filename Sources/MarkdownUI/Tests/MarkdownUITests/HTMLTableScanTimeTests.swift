@@ -102,4 +102,21 @@ final class HTMLTableScanTimeTests: XCTestCase {
       XCTAssertEqual(tableData("<table>" + inner + "</table>").rows.first.map(texts), ["A"], inner)
     }
   }
+
+  func testHeaderRowsThatNeverCloseFinishQuickly() {
+    let unclosed = String(repeating: "<tr><th>x</th>", count: 8_000)
+    let html = "<table><thead>" + unclosed + "</thead></table>"
+    let (data, elapsed) = timed { tableData(html) }
+    XCTAssertLessThan(elapsed, limit, "8,000 unclosed header rows took \(elapsed)s")
+    XCTAssertEqual(data.rows.count, 0)
+  }
+
+  func testCombiningMarkAfterATagKeepsTheSameHeader() {
+    // The regex compares UTF-16 units. Foundation string search would treat ">\u{0301}" as a
+    // different character and skip it.
+    let afterThead = "<table><thead>\u{0301}<tr><th>A</th></tr><tr><th>B</th></tr></thead></table>"
+    XCTAssertEqual(tableData(afterThead).rows.first.map(texts), ["A"])
+    let afterClose = "<table><thead><tr><th>A</th></tr></thead>\u{0301}<tbody><tr><td>1</td></tr></tbody></table>"
+    XCTAssertEqual(tableData(afterClose).rows.first.map(texts), ["A"])
+  }
 }
