@@ -35,8 +35,10 @@ extension MarkdownContent {
       switch block {
       case .paragraph(let content), .heading(_, let content):
         return self.links(in: content, baseURL: baseURL)
-      case .table(_, let rows):
-        return rows.flatMap { row in
+      case .table(let columnAlignments, let rows):
+        // 표 뷰는 1,000칸 안에 들어가는 행까지만 그린다. 그리지 않은 칸의 링크는 내보내지 않는다.
+        let drawn = TableCellLimit.limit(columnAlignments: columnAlignments, rows: rows)
+        return drawn.rows.flatMap { row in
           row.cells.flatMap { self.links(in: $0.content, baseURL: baseURL) }
         }
       default:
