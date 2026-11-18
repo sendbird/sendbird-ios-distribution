@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdAIAgentCore'
-  s.version = '1.24.2'
+  s.version = '1.24.3'
   s.summary = 'Delight AI Agent Core Library'
   s.description = 'Core library for Delight AI Agent with advanced messaging features'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'
