@@ -16,6 +16,8 @@ public protocol NetworkImageCache: AnyObject {
 public class DefaultNetworkImageCache {
   private enum Constants {
     static let defaultCountLimit = 100
+    // 공유 캐시가 붙잡는 디코드된 이미지 바이트 상한. 장 수만으로는 큰 이미지 100장을 막지 못한다.
+    static let defaultTotalCostLimit = 64 * 1024 * 1024
   }
 
   private let cache = NSCache<NSURL, CGImage>()
@@ -27,8 +29,16 @@ public class DefaultNetworkImageCache {
     self.cache.countLimit = countLimit
   }
 
+  convenience init(countLimit: Int, totalCostLimit: Int) {
+    self.init(countLimit: countLimit)
+    self.cache.totalCostLimit = totalCostLimit
+  }
+
   /// A shared network image cache.
-  public static let shared = DefaultNetworkImageCache(countLimit: Constants.defaultCountLimit)
+  public static let shared = DefaultNetworkImageCache(
+    countLimit: Constants.defaultCountLimit,
+    totalCostLimit: Constants.defaultTotalCostLimit
+  )
 }
 
 extension DefaultNetworkImageCache: NetworkImageCache, @unchecked Sendable {
@@ -37,7 +47,8 @@ extension DefaultNetworkImageCache: NetworkImageCache, @unchecked Sendable {
   }
 
   public func setImage(_ image: CGImage, for url: URL) {
-    self.cache.setObject(image, forKey: url as NSURL)
+    // 디코드된 비트맵 크기를 cost 로 준다. totalCostLimit 이 0 이면 cost 는 쓰이지 않는다.
+    self.cache.setObject(image, forKey: url as NSURL, cost: image.bytesPerRow * image.height)
   }
 }
 

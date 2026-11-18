@@ -51,9 +51,11 @@ public struct CachingAsyncImageView: View {
       return
     }
     do {
-      let (data, _) = try await URLSession.shared.data(from: url)
+      // 본문을 메모리 대신 임시 파일로 받아, 큰 파일 주소여도 본문 전체가 메모리에 올라오지 않는다.
+      let (file, _) = try await URLSession.shared.download(from: url)
+      defer { try? FileManager.default.removeItem(at: file) }
       let decoded = await Task.detached(priority: .userInitiated) {
-        UIImage(data: data)?.preparingForDisplay()
+        Self.decodeImage(at: file)
       }.value
       if let img = decoded {
         Self.cache.setObject(img, forKey: url as NSURL, cost: Self.bitmapByteCost(of: img))
@@ -64,6 +66,49 @@ public struct CachingAsyncImageView: View {
     } catch {
       self.failed = true
     }
+  }
+
+  /// 본문이 상한을 넘으면 그리지 않는다. 넓이가 상한 안이면 기존처럼 원본 크기로,
+  /// 넘으면 비율을 지켜 상한 안으로 줄여 디코드한다(원본 크기 비트맵을 만들지 않음).
+  /// 테스트가 처리 완료 뒤 결과를 바로 확인하도록 internal 로 둔다.
+  nonisolated static func decodeImage(at file: URL) -> UIImage? {
+    // 큰 이미지 하나가 앱을 메모리 부족으로 죽이지 않게 하는 상한.
+    // 받은 본문은 20MB 까지, 디코드한 이미지는 2048 x 2048 픽셀(16MB) 넓이까지.
+    let maxDataLength = 20 * 1024 * 1024
+    let maxPixelCount = 2048 * 2048
+
+    guard
+      let length = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+      length <= maxDataLength,
+      let source = CGImageSourceCreateWithURL(file as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+    else {
+      return nil
+    }
+
+    guard
+      let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+      let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
+      let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue,
+      width * height > Double(maxPixelCount)
+    else {
+      return (try? Data(contentsOf: file)).flatMap { UIImage(data: $0)?.preparingForDisplay() }
+    }
+
+    let ratio = (Double(maxPixelCount) / (width * height)).squareRoot()
+    guard
+      let image = CGImageSourceCreateThumbnailAtIndex(
+        source, 0,
+        [
+          kCGImageSourceCreateThumbnailFromImageAlways: true,
+          kCGImageSourceCreateThumbnailWithTransform: true,
+          kCGImageSourceShouldCacheImmediately: true,
+          kCGImageSourceThumbnailMaxPixelSize: max(1, (max(width, height) * ratio).rounded(.down)),
+        ] as CFDictionary
+      )
+    else {
+      return nil
+    }
+    return UIImage(cgImage: image)
   }
 
   private static func bitmapByteCost(of image: UIImage) -> Int {
