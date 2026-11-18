@@ -114,4 +114,35 @@ final class TableCellLimitTests: XCTestCase {
     let links = MarkdownContent(markdown).clickableLinks().map(\.url.absoluteString)
     XCTAssertEqual(links, ["https://e.com/1", "https://e.com/2"])
   }
+
+  // MARK: - Limit edge cases
+
+  func testLimitKeepsWholeRowsWhenTheColumnCountDoesNotDivideOneThousand() {
+    let limited = TableCellLimit.limit(columnAlignments: Array(repeating: .none, count: 3), rows: rawRows(columns: 3, rows: 400))
+    XCTAssertEqual(limited.columnAlignments.count, 3)
+    XCTAssertEqual(limited.rows.count, 333)
+    XCTAssertTrue(limited.rows.allSatisfy { $0.cells.count == 3 })
+  }
+
+  func testLimitLeavesEmptyTablesAlone() {
+    let limited = TableCellLimit.limit(columnAlignments: [.none, .none], rows: [])
+    XCTAssertEqual(limited.columnAlignments.count, 2)
+    XCTAssertTrue(limited.rows.isEmpty)
+  }
+
+  func testLimitHandlesTablesWithoutColumns() {
+    let rows = Array(repeating: RawTableRow(cells: []), count: 2_000)
+    let limited = TableCellLimit.limit(columnAlignments: [], rows: rows)
+    XCTAssertTrue(limited.columnAlignments.isEmpty)
+    XCTAssertEqual(limited.rows.count, 1_000)
+  }
+
+  func testLimitTrimsRowsThatAreLongerThanTheKeptColumns() {
+    let rows = [RawTableRow(cells: (0..<1_200).map { _ in RawTableCell(content: [.text("x")]) })]
+      + rawRows(columns: 1_001, rows: 3)
+    let limited = TableCellLimit.limit(columnAlignments: Array(repeating: .none, count: 1_001), rows: rows)
+    XCTAssertEqual(limited.columnAlignments.count, 1_000)
+    XCTAssertEqual(limited.rows.count, 1)
+    XCTAssertEqual(limited.rows.first?.cells.count, 1_000)
+  }
 }
