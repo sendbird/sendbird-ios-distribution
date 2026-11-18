@@ -38,7 +38,7 @@ final class TableCellLimitTests: XCTestCase {
   private func renderTime(_ text: String) -> TimeInterval {
     let start = ProcessInfo.processInfo.systemUptime
     let renderer = ImageRenderer(content: Markdown(text).frame(width: 320))
-    _ = renderer.uiImage
+    XCTAssertNotNil(renderer.uiImage, "the table must render")
     return ProcessInfo.processInfo.systemUptime - start
   }
 
@@ -72,5 +72,46 @@ final class TableCellLimitTests: XCTestCase {
     let compatFewer = height(CompatTableView(columnAlignments: [.none], rows: rawRows(columns: 1, rows: 999)))
     let compatAtLimit = height(CompatTableView(columnAlignments: [.none], rows: rawRows(columns: 1, rows: 1_000)))
     XCTAssertGreaterThan(compatAtLimit, compatFewer, "the 1,000th row must still be drawn")
+  }
+
+  // MARK: - Links in cells that are not drawn
+
+  /// `clickableLinks()` feeds the VoiceOver link actions, so it must list only the links that are drawn.
+  func testClickableLinksSkipRowsThatAreNotDrawn() {
+    // One column: the header and data rows 0...998 fill 1,000 cells. Row 999 is not drawn.
+    let rows = (0..<1_000).map { index -> String in
+      switch index {
+      case 998: return "|[kept](https://e.com/kept)|"
+      case 999: return "|[dropped](https://e.com/dropped)|"
+      default: return "|v|"
+      }
+    }
+    let markdown = (["|h|", "|---|"] + rows).joined(separator: "\n")
+    let links = MarkdownContent(markdown).clickableLinks().map(\.url.absoluteString)
+    XCTAssertEqual(links, ["https://e.com/kept"])
+  }
+
+  func testClickableLinksSkipColumnsThatAreNotDrawn() {
+    // 1,001 columns: only the header row of the first 1,000 columns is drawn.
+    let header = (0..<1_001).map { index -> String in
+      switch index {
+      case 999: return "[kept](https://e.com/kept)"
+      case 1_000: return "[dropped](https://e.com/dropped)"
+      default: return "h"
+      }
+    }
+    let markdown = [
+      "|" + header.joined(separator: "|") + "|",
+      "|" + String(repeating: "---|", count: 1_001),
+      "|" + Array(repeating: "[row](https://e.com/row)", count: 1_001).joined(separator: "|") + "|",
+    ].joined(separator: "\n")
+    let links = MarkdownContent(markdown).clickableLinks().map(\.url.absoluteString)
+    XCTAssertEqual(links, ["https://e.com/kept"])
+  }
+
+  func testClickableLinksKeepEveryLinkInSmallTables() {
+    let markdown = "|a|b|\n|---|---|\n|[one](https://e.com/1)|[two](https://e.com/2)|"
+    let links = MarkdownContent(markdown).clickableLinks().map(\.url.absoluteString)
+    XCTAssertEqual(links, ["https://e.com/1", "https://e.com/2"])
   }
 }
