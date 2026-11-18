@@ -51,29 +51,40 @@ struct InlineText: View {
       }
     }
     .modifier(TaskModifier(inlines: self.inlines) {
-      self.inlineImages = (try? await self.loadInlineImages()) ?? [:]
+      self.inlineImages = await Self.loadInlineImages(
+        Set(self.inlines.compactMap(\.imageData)),
+        baseURL: self.imageBaseURL,
+        provider: self.inlineImageProvider
+      )
     })
   }
 
-  private func loadInlineImages() async throws -> [String: Image] {
-    let images = Set(self.inlines.compactMap(\.imageData))
+  /// 이미지마다 실패를 따로 받는다. 하나가 실패해도(예: 크기 상한 초과) 같은 문단의 나머지 이미지는 표시한다.
+  static func loadInlineImages(
+    _ images: Set<RawImageData>,
+    baseURL: URL?,
+    provider: InlineImageProvider
+  ) async -> [String: Image] {
     guard !images.isEmpty else { return [:] }
 
-    return try await withThrowingTaskGroup(of: (String, Image).self) { taskGroup in
+    return await withTaskGroup(of: (String, Image)?.self) { taskGroup in
       for image in images {
-        guard let url = URL(string: image.source, relativeTo: self.imageBaseURL) else {
+        guard let url = URL(string: image.source, relativeTo: baseURL) else {
           continue
         }
 
         taskGroup.addTask {
-          (image.source, try await self.inlineImageProvider.image(with: url, label: image.alt))
+          guard let loaded = try? await provider.image(with: url, label: image.alt) else {
+            return nil
+          }
+          return (image.source, loaded)
         }
       }
 
       var inlineImages: [String: Image] = [:]
 
-      for try await result in taskGroup {
-        inlineImages[result.0] = result.1
+      for await case let (source, image)? in taskGroup {
+        inlineImages[source] = image
       }
 
       return inlineImages

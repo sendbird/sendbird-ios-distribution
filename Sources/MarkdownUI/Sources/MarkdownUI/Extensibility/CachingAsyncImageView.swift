@@ -70,7 +70,8 @@ public struct CachingAsyncImageView: View {
 
   /// 본문이 상한을 넘으면 그리지 않는다. 넓이가 상한 안이면 기존처럼 원본 크기로,
   /// 넘으면 비율을 지켜 상한 안으로 줄여 디코드한다(원본 크기 비트맵을 만들지 않음).
-  nonisolated private static func decodeImage(at file: URL) -> UIImage? {
+  /// 테스트가 처리 완료 뒤 결과를 바로 확인하도록 internal 로 둔다.
+  nonisolated static func decodeImage(at file: URL) -> UIImage? {
     // 큰 이미지 하나가 앱을 메모리 부족으로 죽이지 않게 하는 상한.
     // 받은 본문은 20MB 까지, 디코드한 이미지는 2048 x 2048 픽셀(16MB) 넓이까지.
     let maxDataLength = 20 * 1024 * 1024

@@ -59,7 +59,53 @@ final class ImageSizeLimitTests: XCTestCase {
     do {
       let image = try await loader.image(from: Self.uniqueURL())
       XCTFail("A \(body.count) byte body was decoded into \(image.width)x\(image.height)")
-    } catch {}
+    } catch let error as URLError {
+      XCTAssertEqual(error.code, .dataLengthExceedsMaximum)
+    }
+  }
+
+  func testInlineLoaderAcceptsBodyAtLimit() async throws {
+    let body = Self.padded(Self.makePNG(width: 300, height: 200), to: maxDataLength)
+    XCTAssertEqual(body.count, 20_971_520)
+    let loader = Self.loader(serving: body)
+
+    let image = try await loader.image(from: Self.uniqueURL())
+
+    XCTAssertEqual(image.width, 300)
+    XCTAssertEqual(image.height, 200)
+  }
+
+  func testInlineLoaderKeepsImageAtPixelLimit() async throws {
+    let png = Self.makePNG(width: 2048, height: 2048)
+    let loader = Self.loader(serving: png)
+
+    let image = try await loader.image(from: Self.uniqueURL())
+
+    XCTAssertEqual(image.width * image.height, 4_194_304)
+  }
+
+  /// One oversized image must not hide the other images of the same paragraph.
+  func testInlineImagesKeepNormalImageWhenAnotherIsOversized() async throws {
+    let small = URL(string: "https://example.test/small.png")!
+    let large = URL(string: "https://example.test/large.png")!
+    let png = Self.makePNG(width: 300, height: 200)
+    let bodies = [small: png, large: Self.padded(png, to: 20_971_521)]
+    let loader = DefaultNetworkImageLoader(cache: DefaultNetworkImageCache()) { url in
+      let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+      return (bodies[url] ?? Data(), response)
+    }
+    let content = MarkdownContent("# ![정상](\(small.absoluteString)) ![초과](\(large.absoluteString))")
+    guard case .heading(_, let inlines)? = content.blocks.first else {
+      return XCTFail("Expected a heading, got \(content.blocks)")
+    }
+
+    let images = await InlineText.loadInlineImages(
+      Set(inlines.compactMap(\.imageData)),
+      baseURL: nil,
+      provider: LoaderInlineImageProvider(loader: loader)
+    )
+
+    XCTAssertEqual(Set(images.keys), [small.absoluteString])
   }
 
   func testSharedInlineCacheBoundsDecodedBytes() throws {
@@ -103,17 +149,40 @@ final class ImageSizeLimitTests: XCTestCase {
     XCTAssertEqual(image.size.height * image.scale, 200)
   }
 
-  @MainActor
-  func testCachingAsyncImageViewRejectsOversizedBody() throws {
+  // The decode runs to completion before the result is checked, so "rejected" is not confused
+  // with "still decoding".
+  func testCachingAsyncImageDecodeRejectsOversizedFile() throws {
     guard #available(iOS 15.0, *) else { throw XCTSkip("CachingAsyncImageView needs iOS 15") }
-    let url = Self.uniqueURL()
-    StubImageProtocol.bodies[url] = Self.padded(Self.makePNG(width: 300, height: 200), to: maxDataLength + 1)
+    let file = try Self.writeTemporaryFile(
+      Self.padded(Self.makePNG(width: 300, height: 200), to: maxDataLength + 1)
+    )
+    defer { try? FileManager.default.removeItem(at: file) }
 
-    // The body is served in full, then the view gets a few seconds to decode and cache it.
-    let image = loadCachingAsyncImage(url, timeout: 5)
+    XCTAssertNil(CachingAsyncImageView.decodeImage(at: file), "A body over the limit is not drawn")
+  }
 
-    XCTAssertTrue(StubImageProtocol.served.contains(url), "The view requested the image")
-    XCTAssertNil(image, "A body over the limit is not drawn")
+  func testCachingAsyncImageDecodeAcceptsFileAtLimit() throws {
+    guard #available(iOS 15.0, *) else { throw XCTSkip("CachingAsyncImageView needs iOS 15") }
+    let file = try Self.writeTemporaryFile(
+      Self.padded(Self.makePNG(width: 300, height: 200), to: maxDataLength)
+    )
+    defer { try? FileManager.default.removeItem(at: file) }
+
+    let image = try XCTUnwrap(CachingAsyncImageView.decodeImage(at: file))
+
+    XCTAssertEqual(image.size.width * image.scale, 300)
+    XCTAssertEqual(image.size.height * image.scale, 200)
+  }
+
+  func testCachingAsyncImageDecodeKeepsImageAtPixelLimit() throws {
+    guard #available(iOS 15.0, *) else { throw XCTSkip("CachingAsyncImageView needs iOS 15") }
+    let file = try Self.writeTemporaryFile(Self.makePNG(width: 2048, height: 2048))
+    defer { try? FileManager.default.removeItem(at: file) }
+
+    let image = try XCTUnwrap(CachingAsyncImageView.decodeImage(at: file))
+
+    let pixels = Int(image.size.width * image.scale) * Int(image.size.height * image.scale)
+    XCTAssertEqual(pixels, 4_194_304)
   }
 
   // MARK: Helpers
@@ -146,6 +215,12 @@ final class ImageSizeLimitTests: XCTestCase {
     }
   }
 
+  private static func writeTemporaryFile(_ data: Data) throws -> URL {
+    let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try data.write(to: file)
+    return file
+  }
+
   private static func uniqueURL() -> URL {
     URL(string: "https://image-size-limit.test/\(UUID().uuidString).png")!
   }
@@ -173,6 +248,15 @@ final class ImageSizeLimitTests: XCTestCase {
   /// A valid image followed by bytes the decoder ignores, standing in for a large file.
   private static func padded(_ image: Data, to length: Int) -> Data {
     image + Data(count: max(0, length - image.count))
+  }
+}
+
+/// `DefaultInlineImageProvider` with a loader the test controls.
+private struct LoaderInlineImageProvider: InlineImageProvider {
+  let loader: DefaultNetworkImageLoader
+
+  func image(with url: URL, label: String) async throws -> Image {
+    Image(try await loader.image(from: url), scale: 1, label: Text(label))
   }
 }
 
