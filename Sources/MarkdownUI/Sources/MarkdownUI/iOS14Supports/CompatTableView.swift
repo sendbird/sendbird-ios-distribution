@@ -9,8 +9,10 @@ struct CompatTableView: View {
   private let rows: [RawTableRow]
 
   init(columnAlignments: [RawTableColumnAlignment], rows: [RawTableRow]) {
-    self.columnAlignments = columnAlignments
-    self.rows = rows
+    // 칸을 모두 한꺼번에 만들기 때문에 1,000칸 안에 들어가는 행까지만 그린다(TableCellLimit).
+    let limited = TableCellLimit.limit(columnAlignments: columnAlignments, rows: rows)
+    self.columnAlignments = limited.columnAlignments
+    self.rows = limited.rows
   }
 
   var body: some View {
