@@ -22,6 +22,7 @@ struct TaskListItemView: View {
   private var label: some View {
     Label {
       BlockSequence(self.item.children)
+        .measuredOncePerWidth()
     } icon: {
       self.taskListMarker.makeBody(configuration: .init(isCompleted: self.item.isCompleted))
         .textStyleFont()
