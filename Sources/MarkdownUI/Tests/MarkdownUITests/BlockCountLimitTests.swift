@@ -119,6 +119,43 @@ final class BlockCountLimitTests: XCTestCase {
     XCTAssertEqual(limited.count, 997)
   }
 
+  func testBlocksAfterAPartlyKeptListAreNotDrawn() {
+    // 996 paragraphs leave 4: the list and its first item with its paragraph take 3. The second item
+    // does not fit, so the paragraph after the list must not come back with the 1 that is left.
+    let markdown = self.paragraphs(996) + "\n\n- a\n- b\n\nafter"
+
+    let limited = BlockCountLimit.limit([BlockNode](markdown: markdown))
+
+    XCTAssertEqual(limited.count, 997)
+    XCTAssertEqual(limited.last, .bulletedList(isTight: true, items: [RawListItem(children: [.paragraph(content: [.text("a")])])]))
+  }
+
+  func testHTMLListOfUnclosedItemsLaysOutQuickly() {
+    // 4,000 `<li>` tags that never close. The item regex read to the end of the text from every one of them.
+    let html = "<ul>\n" + String(repeating: "<li>x\n", count: 4_000) + "</ul>"
+
+    XCTAssertLessThan(self.layout(html).time, self.limit)
+  }
+
+  func testHTMLListItemScanMatchesTheRegex() {
+    let regex = try! NSRegularExpression(pattern: "<li[^>]*>(.*?)</li>", options: [.caseInsensitive, .dotMatchesLineSeparators])
+    let samples = [
+      "<ul><li>a</li><li class=\"x\">b</li></ul>",
+      "<UL>\n<LI>대문자</LI>\n<li>\n줄바꿈\n</li>\n</UL>",
+      "<ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>",
+      "<ul><li>열림만<li>둘째</li></ul>",
+      "<ul><li>닫힘 없음\n<li>또 없음</ul>",
+      "<ul><link rel=x><li>링크 태그 뒤</li></ul>",
+      "<ol><li>😀 이모지</li><li></li></ol>",
+    ]
+    for html in samples {
+      let expected = regex.matches(in: html, range: NSRange(html.startIndex..., in: html)).map {
+        String(html[Range($0.range(at: 1), in: html)!])
+      }
+      XCTAssertEqual(BlockNode.listItemContents(in: html), expected, html)
+    }
+  }
+
   func testHTMLListSharesTheDocumentLimit() {
     // 990 paragraphs leave 10: the list takes 1 and each item 2, so 4 items fit.
     let html = "<ul>\n" + (0..<100).map { "<li>h\($0)</li>" }.joined(separator: "\n") + "\n</ul>"
