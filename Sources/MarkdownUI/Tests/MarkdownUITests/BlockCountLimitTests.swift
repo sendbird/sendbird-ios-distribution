@@ -178,6 +178,24 @@ final class BlockCountLimitTests: XCTestCase {
     XCTAssertEqual(content.clickableLinks().last?.url.absoluteString, "https://e.com/last")
   }
 
+  func testHTMLBlockquoteCountsItsParagraph() {
+    // The view draws an HTML quote as a quote and a paragraph. With 1 left it does not fit.
+    let quote = "<blockquote>x</blockquote>"
+    let full = BlockCountLimit.limit([BlockNode](markdown: self.paragraphs(999) + "\n\n" + quote))
+    let fits = BlockCountLimit.limit([BlockNode](markdown: self.paragraphs(998) + "\n\n" + quote))
+
+    XCTAssertEqual(full.count, 999)
+    XCTAssertEqual(fits.count, 999)
+    guard case .htmlBlock(let content) = fits.last else { return XCTFail("the quote must stay with 2 left") }
+    XCTAssertTrue(content.hasPrefix(quote), content)
+  }
+
+  func testManyHTMLBlockquotesStayUnderTheLimit() {
+    let markdown = Array(repeating: "<blockquote>x</blockquote>", count: 1_000).joined(separator: "\n\n")
+
+    XCTAssertEqual(BlockCountLimit.limit([BlockNode](markdown: markdown)).count, 500)
+  }
+
   func testHTMLListSharesTheDocumentLimit() {
     // 990 paragraphs leave 10: the list takes 1 and each item 2, so 4 items fit.
     let html = "<ul>\n" + (0..<100).map { "<li>h\($0)</li>" }.joined(separator: "\n") + "\n</ul>"

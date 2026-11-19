@@ -52,7 +52,7 @@ extension BlockNode: View {
     }
   }
 
-  // BlockCountLimit 이 뷰와 같은 기준으로 HTML 목록을 세려고 아래 네 함수에서 private를 뺐다.
+  // BlockCountLimit 이 뷰와 같은 기준으로 HTML 블록을 세려고 아래 판정 함수와 항목 추출에서 private를 뺐다.
   func isHTMLTable(_ html: String) -> Bool {
     html.lowercased().contains("<table")
   }
@@ -62,18 +62,18 @@ extension BlockNode: View {
     return lowered.contains("<ul") || lowered.contains("<ol")
   }
 
-  private func isHTMLHeading(_ html: String) -> Bool {
+  func isHTMLHeading(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<h1") || lowered.contains("<h2") || lowered.contains("<h3") ||
            lowered.contains("<h4") || lowered.contains("<h5") || lowered.contains("<h6")
   }
 
-  private func isHTMLCode(_ html: String) -> Bool {
+  func isHTMLCode(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<pre") || lowered.contains("<code")
   }
 
-  private func isHTMLBlockquote(_ html: String) -> Bool {
+  func isHTMLBlockquote(_ html: String) -> Bool {
     html.lowercased().contains("<blockquote")
   }
 

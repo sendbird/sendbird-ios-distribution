@@ -62,6 +62,13 @@ enum BlockCountLimit {
       result = kept.isEmpty && !items.isEmpty ? nil : .taskList(isTight: isTight, items: kept)
     case .htmlBlock(let content) where !block.isHTMLTable(content) && block.isHTMLList(content):
       result = self.limitHTMLList(block, content: content, budget: &inner)
+    case .htmlBlock(let content)
+    where !block.isHTMLTable(content) && !block.isHTMLHeading(content) && !block.isHTMLCode(content)
+      && block.isHTMLBlockquote(content):
+      // 뷰는 HTML 인용문을 인용 뷰와 그 안의 문단 뷰 하나로 그린다(분기 순서도 뷰와 같다).
+      guard inner.remaining > 0 else { return nil }
+      inner.remaining -= 1
+      result = block
     default:
       result = block
     }
