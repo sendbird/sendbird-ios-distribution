@@ -52,11 +52,12 @@ extension BlockNode: View {
     }
   }
 
-  private func isHTMLTable(_ html: String) -> Bool {
+  // BlockCountLimit 이 뷰와 같은 기준으로 HTML 목록을 세려고 아래 네 함수에서 private를 뺐다.
+  func isHTMLTable(_ html: String) -> Bool {
     html.lowercased().contains("<table")
   }
 
-  private func isHTMLList(_ html: String) -> Bool {
+  func isHTMLList(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<ul") || lowered.contains("<ol")
   }
@@ -92,8 +93,12 @@ extension BlockNode: View {
     }
   }
 
+  func isHTMLOrderedList(_ html: String) -> Bool {
+    html.lowercased().contains("<ol")
+  }
+
   private func parseHTMLList(_ html: String) -> some View {
-    let isOrdered = html.lowercased().contains("<ol")
+    let isOrdered = isHTMLOrderedList(html)
     let items = extractListItems(from: html)
 
     if isOrdered {
@@ -216,7 +221,7 @@ extension BlockNode: View {
     }
   }
 
-  private func extractListItems(from html: String) -> [RawListItem] {
+  func extractListItems(from html: String) -> [RawListItem] {
     let itemPattern = "<li[^>]*>(.*?)</li>"
     guard let regex = safeRegex(pattern: itemPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
       return []

@@ -43,6 +43,12 @@ final class BlockCountLimitTests: XCTestCase {
     XCTAssertLessThan(time, self.limit)
   }
 
+  func testHTMLListWithFourThousandItemsLaysOutQuickly() {
+    let html = "<ul>\n" + (0..<4_000).map { "<li>i\($0)</li>" }.joined(separator: "\n") + "\n</ul>"
+
+    XCTAssertLessThan(self.layout(html).time, self.limit)
+  }
+
   func testParagraphsPastTheLimitAreNotDrawn() {
     let atTheLimit = self.layout(self.paragraphs(1_000)).height
 
@@ -96,6 +102,41 @@ final class BlockCountLimitTests: XCTestCase {
 
     XCTAssertEqual(limited.count, 999)
     XCTAssertEqual(limited.last, .paragraph(content: [.text("p998")]))
+  }
+
+  func testLimitDoesNotKeepAListWhoseFirstItemDoesNotFit() {
+    // 998 paragraphs leave 2: the list takes 1 and its item needs 2 (the item and its paragraph).
+    let limited = BlockCountLimit.limit([BlockNode](markdown: self.paragraphs(998) + "\n\n- x"))
+
+    XCTAssertEqual(limited.count, 998)
+    XCTAssertEqual(limited.last, .paragraph(content: [.text("p997")]))
+  }
+
+  func testLimitDoesNotKeepAnItemWhoseNestedQuoteIsEmpty() {
+    // 997 paragraphs leave 3: list, item and quote fit, but the quote's paragraph does not.
+    let limited = BlockCountLimit.limit([BlockNode](markdown: self.paragraphs(997) + "\n\n- > x"))
+
+    XCTAssertEqual(limited.count, 997)
+  }
+
+  func testHTMLListSharesTheDocumentLimit() {
+    // 990 paragraphs leave 10: the list takes 1 and each item 2, so 4 items fit.
+    let html = "<ul>\n" + (0..<100).map { "<li>h\($0)</li>" }.joined(separator: "\n") + "\n</ul>"
+
+    let limited = BlockCountLimit.limit([BlockNode](markdown: self.paragraphs(990) + "\n\n" + html))
+
+    XCTAssertEqual(limited.count, 991)
+    XCTAssertEqual(
+      limited.last,
+      .bulletedList(isTight: true, items: (0..<4).map { RawListItem(children: [.paragraph(content: [.text("h\($0)")])]) })
+    )
+  }
+
+  func testHTMLListUnderTheLimitStaysHTML() {
+    let html = "<ol>\n<li>a</li>\n<li>b</li>\n</ol>"
+    let blocks = [BlockNode](markdown: html)
+
+    XCTAssertEqual(BlockCountLimit.limit(blocks), blocks)
   }
 
   func testLimitKeepsTheCheckedStateOfTaskItems() {
