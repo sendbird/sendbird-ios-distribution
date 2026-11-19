@@ -37,12 +37,29 @@ final class InlineAttributeTests: XCTestCase {
     XCTAssertEqual(text.components(separatedBy: "속성").count - 1, 3, text)
   }
 
-  func testNestedAttributesKeepTheInnermostText() {
-    let markdown = String(repeating: "^[", count: 100) + "x" + String(repeating: "](k: v)", count: 100)
+  func testNestedAttributesKeepTheInnermostTextOnce() {
+    // 3 levels stay under the depth limit (32); 100 levels cross it and fall back to plain text.
+    for count in [3, 100] {
+      let markdown = String(repeating: "^[", count: count) + "*x*" + String(repeating: "](k: v)", count: count)
 
-    let text = [BlockNode](markdown: markdown).renderPlainText()
+      let blocks = [BlockNode](markdown: markdown)
 
-    XCTAssertTrue(text.contains("x"), text)
+      let expected: [InlineNode] = count < maxMarkdownNestingDepth ? [.emphasis(children: [.text("x")])] : [.text("x")]
+      XCTAssertEqual(blocks, [.paragraph(content: expected)], "nesting \(count)")
+    }
+  }
+
+  func testAttributeInsideLinkAndAroundImageKeepsDestinationAndText() {
+    XCTAssertEqual(
+      [BlockNode](markdown: "[^[라벨](k: v)](https://example.com) ^[![대체](https://example.com/a.png)](k: v)"),
+      [
+        .paragraph(content: [
+          .link(destination: "https://example.com", children: [.text("라벨")]),
+          .text(" "),
+          .image(source: "https://example.com/a.png", children: [.text("대체")]),
+        ])
+      ]
+    )
   }
 
   func testLinkAndFootnoteLikeTextAreUnchanged() {
