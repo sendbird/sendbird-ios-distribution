@@ -53,7 +53,9 @@ Pod::Spec.new do |s|
   # 빌드한 것에 맞춰 컴파일된다. 같은 방식으로 빌드하지 않으면 앱이 실행 직후 죽는다.
   s.pod_target_xcconfig = {
     'SWIFT_INCLUDE_PATHS' => '$(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/include $(PODS_TARGET_SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/include',
-    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING',
+    # NDEBUG: cmark 의 C assert 를 끈다. cmark 의 CMake 빌드가 Release 에서 하는 것과 같다. 고객 앱의 빌드 설정 이름은
+    # Release 가 아닐 수 있어 설정과 상관없이 넣는다. 넣지 않으면 cmark 안의 전제가 한 번만 어긋나도 앱이 죽는다.
+    'OTHER_CFLAGS' => '-DCMARK_GFM_STATIC_DEFINE -DCMARK_THREADING -DNDEBUG',
     'BUILD_LIBRARY_FOR_DISTRIBUTION' => 'YES'
   }
 end
