@@ -90,11 +90,11 @@ extension BlockNode {
     case .htmlBlock:
       self = .htmlBlock(content: unsafeNode.literal ?? "")
     case .paragraph:
-      self = .paragraph(content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
+      self = .paragraph(content: unsafeNode.inlineChildren(depth: depth + 1))
     case .heading:
       self = .heading(
         level: unsafeNode.headingLevel,
-        content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
+        content: unsafeNode.inlineChildren(depth: depth + 1)
       )
     case .table:
       self = .table(
@@ -157,7 +157,7 @@ extension RawTableCell {
       self.init(content: [])
       return
     }
-    self.init(content: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth) })
+    self.init(content: unsafeNode.inlineChildren(depth: depth))
   }
 }
 
@@ -183,20 +183,20 @@ extension InlineNode {
     case .html:
       self = .text(unsafeNode.literal ?? "")
     case .emphasis:
-      self = .emphasis(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
+      self = .emphasis(children: unsafeNode.inlineChildren(depth: depth + 1))
     case .strong:
-      self = .strong(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
+      self = .strong(children: unsafeNode.inlineChildren(depth: depth + 1))
     case .strikethrough:
-      self = .strikethrough(children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) })
+      self = .strikethrough(children: unsafeNode.inlineChildren(depth: depth + 1))
     case .link:
       self = .link(
         destination: unsafeNode.url ?? "",
-        children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
+        children: unsafeNode.inlineChildren(depth: depth + 1)
       )
     case .image:
       self = .image(
         source: unsafeNode.url ?? "",
-        children: unsafeNode.children.compactMap { InlineNode(unsafeNode: $0, depth: depth + 1) }
+        children: unsafeNode.inlineChildren(depth: depth + 1)
       )
     default:
       assertionFailure("Unhandled node type '\(unsafeNode.nodeType)' in InlineNode.")
@@ -220,6 +220,22 @@ extension UnsafeNode {
 
   fileprivate var children: UnsafeNodeSequence {
     .init(cmark_node_first_child(self))
+  }
+
+  // 인라인 자식을 InlineNode 로 바꾼다. `^[글](값)` 인라인 속성 노드는 MarkdownUI 가 속성을 쓰지 않으므로
+  // 감싼 자식을 그 자리에 펼친다. 이 노드를 그대로 넘기면 Debug 빌드는 assertionFailure 로 멈추고 Release 는 글을 버렸다.
+  fileprivate func inlineChildren(depth: Int) -> [InlineNode] {
+    children.flatMap { child -> [InlineNode] in
+      guard child.nodeType == .inlineAttributes else {
+        return InlineNode(unsafeNode: child, depth: depth).map { [$0] } ?? []
+      }
+      // 속성을 수천 번 겹쳐도 재귀가 깊어지지 않게, 깊이 상한을 넘으면 글자만 남긴다.
+      guard depth < maxMarkdownNestingDepth else {
+        let text = child.flattenedText
+        return text.isEmpty ? [] : [.text(text)]
+      }
+      return child.inlineChildren(depth: depth + 1)
+    }
   }
 
   // 이 노드 아래의 글자를 모은다. cmark iterator는 반복문으로 돌아 깊이와 상관없이 스택을 더 쓰지 않는다.
