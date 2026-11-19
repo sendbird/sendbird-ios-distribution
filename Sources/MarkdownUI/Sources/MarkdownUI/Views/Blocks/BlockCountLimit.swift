@@ -70,13 +70,13 @@ enum BlockCountLimit {
     return result
   }
 
-  /// 뷰는 HTML 목록의 `<li>`마다 항목 뷰와 문단 뷰를 만든다.
-  /// `<li` 수로 센 최대치가 남은 개수 안이면 그대로 두고, 넘치면 뷰와 같은 방식으로 항목을 뽑아 앞부분만 목록으로 남긴다.
-  /// 뽑은 경우에는 뷰가 HTML을 다시 파싱하지 않도록 뷰가 그리는 것과 같은 목록 블록으로 바꾼다.
+  /// 뷰는 HTML 목록의 `<li>`마다 항목 뷰와 문단 뷰를 만든다. 뷰와 같은 스캔(`listItemContents`)으로 항목 수를 세어,
+  /// 남은 개수 안이면 그대로 두고 그 수만큼만 뺀다. 넘치면 뷰와 같은 방식으로 항목을 뽑아 앞부분만 목록으로 남긴다.
+  /// 이때는 뷰가 HTML을 다시 훑지 않도록 뷰가 그리는 것과 같은 목록 블록으로 바꾼다.
   private static func limitHTMLList(_ block: BlockNode, content: String, budget: inout Budget) -> BlockNode? {
-    let openTags = self.listItemTagCount(in: content)
-    if openTags * 2 <= budget.remaining {
-      budget.remaining -= openTags * 2
+    let itemCount = BlockNode.listItemContents(in: content).count
+    if itemCount * 2 <= budget.remaining {
+      budget.remaining -= itemCount * 2
       return block
     }
     let items = block.extractListItems(from: content)
@@ -87,26 +87,6 @@ enum BlockCountLimit {
     return block.isHTMLOrderedList(content)
       ? .numberedList(isTight: true, start: 1, items: kept)
       : .bulletedList(isTight: true, items: kept)
-  }
-
-  /// `<li>`, `<li class=...>` 처럼 여는 `<li` 태그 수. 정규식 없이 한 번 훑는다(`<link` 는 세지 않는다).
-  private static func listItemTagCount(in html: String) -> Int {
-    let bytes = Array(html.utf8)
-    var count = 0
-    var index = 0
-    while index + 3 < bytes.count {
-      if bytes[index] == UInt8(ascii: "<"),
-         bytes[index + 1] | 0x20 == UInt8(ascii: "l"),
-         bytes[index + 2] | 0x20 == UInt8(ascii: "i") {
-        let next = bytes[index + 3]
-        if next == UInt8(ascii: ">") || next == UInt8(ascii: " ") || next == UInt8(ascii: "\t")
-          || next == UInt8(ascii: "\n") || next == UInt8(ascii: "\r") || next == UInt8(ascii: "/") {
-          count += 1
-        }
-      }
-      index += 1
-    }
-    return count
   }
 
   private static func limit(_ items: [RawListItem], budget: inout Budget) -> [RawListItem] {

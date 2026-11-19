@@ -156,6 +156,28 @@ final class BlockCountLimitTests: XCTestCase {
     }
   }
 
+  func testHTMLItemsOpenedByOtherTagsAreCountedLikeTheViewDrawsThem() {
+    // The view's item scan, like the regex before it, also takes `<link>x</li>` and `<li\u{000C}>x</li>` as items.
+    for item in ["<link>x</li>", "<li\u{000C}>x</li>"] {
+      let html = "<ul>\n" + String(repeating: item + "\n", count: 1_500) + "</ul>"
+
+      guard case .bulletedList(_, let items) = BlockCountLimit.limit([BlockNode](markdown: html)).first else {
+        return XCTFail("an overflowing HTML list becomes a list block")
+      }
+      XCTAssertEqual(items.count, 499, item.debugDescription)
+    }
+  }
+
+  func testHTMLListUsesOnlyTheItemsItDraws() {
+    // `<li>` inside an attribute is not an item: the list costs 3 (list, item, paragraph), so all 999 blocks fit.
+    let markdown = self.paragraphs(995) + "\n\n<ul><li title=\"<li>\">x</li></ul>\n\n[last](https://e.com/last)"
+
+    let content = MarkdownContent(markdown)
+
+    XCTAssertEqual(BlockCountLimit.limit(content.blocks).count, 997)
+    XCTAssertEqual(content.clickableLinks().last?.url.absoluteString, "https://e.com/last")
+  }
+
   func testHTMLListSharesTheDocumentLimit() {
     // 990 paragraphs leave 10: the list takes 1 and each item 2, so 4 items fit.
     let html = "<ul>\n" + (0..<100).map { "<li>h\($0)</li>" }.joined(separator: "\n") + "\n</ul>"
