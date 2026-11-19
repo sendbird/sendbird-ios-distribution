@@ -1236,7 +1236,10 @@ static cmark_node *handle_close_bracket_attribute(cmark_parser *parser, subject 
 
     if (ref && ref->is_attributes_reference) {
       isAttributesNode = true;
-      attributes = chunk_clone(subj->mem, &ref->attributes);
+      // Sendbird: 참조마다 정의의 값을 복사하지 않는다. 원래는 chunk_clone 으로 값 전체를 복사해서, 값이 긴 정의를
+      // 수천 번 참조하면 메시지 하나에 메모리가 참조 수 × 값 길이만큼 늘었다(66KB 메시지에 약 126MB).
+      // MarkdownUI 는 파싱한 트리의 속성 값을 읽지 않으므로(속성 노드는 자식 글만 쓴다) 빈 값을 넣는다.
+      attributes = cmark_chunk_literal("");
     }
   }
 
