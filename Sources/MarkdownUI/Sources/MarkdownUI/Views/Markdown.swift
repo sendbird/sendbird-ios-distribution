@@ -224,7 +224,8 @@ public struct Markdown: View {
   }
 
   private var blocks: [BlockNode] {
-    self.content.blocks.filterImagesMatching(colorScheme: self.colorScheme)
+    // 블록 뷰를 한꺼번에 만들기 때문에 1,000개까지만 그린다(BlockCountLimit).
+    BlockCountLimit.limit(self.content.blocks.filterImagesMatching(colorScheme: self.colorScheme))
   }
 
   /// Wraps the user's `markdownImageTapHandler` with the clickable image list of the

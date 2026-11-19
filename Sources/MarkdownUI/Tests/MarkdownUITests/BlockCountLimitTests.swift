@@ -69,4 +69,45 @@ final class BlockCountLimitTests: XCTestCase {
 
     XCTAssertEqual(content.clickableImages().count, 1_000)
   }
+
+  // MARK: - Limit function
+
+  func testLimitLeavesDocumentsUnderTheLimitAlone() {
+    let blocks = [BlockNode](markdown: self.paragraphs(BlockCountLimit.maxBlocks))
+
+    XCTAssertEqual(BlockCountLimit.limit(blocks), blocks)
+  }
+
+  func testLimitCountsListItemsAndTheBlocksInsideThem() {
+    // The list, then each item and its paragraph: 1 + 2 × 499 = 999. The 500th item would need 2 more.
+    let blocks = [BlockNode](markdown: self.listItems(600))
+
+    guard case .bulletedList(_, let items) = BlockCountLimit.limit(blocks).first else {
+      return XCTFail("the list must stay")
+    }
+    XCTAssertEqual(items.count, 499)
+    XCTAssertEqual(items.last, RawListItem(children: [.paragraph(content: [.text("i498")])]))
+  }
+
+  func testLimitDoesNotKeepAnEmptyQuoteAtTheBoundary() {
+    let blocks = [BlockNode](markdown: self.paragraphs(999) + "\n\n> quoted")
+
+    let limited = BlockCountLimit.limit(blocks)
+
+    XCTAssertEqual(limited.count, 999)
+    XCTAssertEqual(limited.last, .paragraph(content: [.text("p998")]))
+  }
+
+  func testLimitKeepsTheCheckedStateOfTaskItems() {
+    let taskList = BlockNode.taskList(
+      isTight: true,
+      items: (0..<600).map { .init(isCompleted: $0 % 2 == 0, children: [.paragraph(content: [.text("t\($0)")])]) }
+    )
+
+    guard case .taskList(_, let items) = BlockCountLimit.limit([taskList]).first else {
+      return XCTFail("the task list must stay")
+    }
+    XCTAssertEqual(items.count, 499)
+    XCTAssertEqual(items.map(\.isCompleted), (0..<499).map { $0 % 2 == 0 })
+  }
 }
