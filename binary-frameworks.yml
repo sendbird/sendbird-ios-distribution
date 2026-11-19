@@ -64,6 +64,11 @@ targets:
         SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/include $(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/include"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/include $(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm/src $(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/include $(SRCROOT)/Sources/MarkdownUI/ThirdParty/cmark-gfm-extensions/src"
         GCC_PREPROCESSOR_DEFINITIONS: "$(inherited) CMARK_GFM_STATIC_DEFINE=1 CMARK_THREADING=1"
+      configs:
+        # 배포 xcframework 는 Release 로 archive 한다. cmark 의 CMake 빌드처럼 NDEBUG 를 넣어 C assert 를 끈다.
+        # 넣지 않으면 cmark 안에서 전제가 한 번만 어긋나도 표시가 깨지는 대신 고객 앱이 죽는다. Debug 테스트에서는 assert 를 그대로 둔다.
+        Release:
+          GCC_PREPROCESSOR_DEFINITIONS: "$(inherited) CMARK_GFM_STATIC_DEFINE=1 CMARK_THREADING=1 NDEBUG=1"
 
   # Package.swift 의 testTarget 자리를 대신한다. MarkdownUI 가 바이너리가 되면
   # @testable import 가 불가능해서 SwiftPM 테스트 타깃을 유지할 수 없다.
