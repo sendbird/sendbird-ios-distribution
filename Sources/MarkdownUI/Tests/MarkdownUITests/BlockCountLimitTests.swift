@@ -131,8 +131,8 @@ final class BlockCountLimitTests: XCTestCase {
   }
 
   func testHTMLListOfUnclosedItemsLaysOutQuickly() {
-    // 4,000 `<li>` tags that never close. The item regex read to the end of the text from every one of them.
-    let html = "<ul>\n" + String(repeating: "<li>x\n", count: 4_000) + "</ul>"
+    // 8,000 `<li>` tags that never close (48,000 characters). The item regex read to the end of the text from every one of them.
+    let html = "<ul>\n" + String(repeating: "<li>x\n", count: 8_000) + "</ul>"
 
     XCTAssertLessThan(self.layout(html).time, self.limit)
   }
