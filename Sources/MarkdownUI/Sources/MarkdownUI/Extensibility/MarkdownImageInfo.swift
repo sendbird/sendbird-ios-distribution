@@ -27,7 +27,8 @@ extension MarkdownContent {
   /// - Parameter imageBaseURL: The base URL for resolving relative image URLs. Pass the
   ///   same value used for the ``Markdown`` view's `imageBaseURL`. The default is `nil`.
   public func clickableImages(relativeTo imageBaseURL: URL? = nil) -> [MarkdownImageInfo] {
-    Self.clickableImages(in: self.blocks, imageBaseURL: imageBaseURL)
+    // 뷰는 블록을 1,000개까지만 그린다. 그리지 않은 블록의 이미지는 내보내지 않는다.
+    Self.clickableImages(in: BlockCountLimit.limit(self.blocks), imageBaseURL: imageBaseURL)
   }
 
   private static func clickableImages(

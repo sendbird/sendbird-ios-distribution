@@ -27,7 +27,8 @@ extension MarkdownContent {
   /// - Parameter baseURL: The base URL for resolving relative destinations. Pass the
   ///   same value used for the ``Markdown`` view's `baseURL`. The default is `nil`.
   public func clickableLinks(relativeTo baseURL: URL? = nil) -> [MarkdownLinkInfo] {
-    Self.clickableLinks(in: self.blocks, baseURL: baseURL)
+    // 뷰는 블록을 1,000개까지만 그린다. 그리지 않은 블록의 링크는 내보내지 않는다.
+    Self.clickableLinks(in: BlockCountLimit.limit(self.blocks), baseURL: baseURL)
   }
 
   private static func clickableLinks(in blocks: [BlockNode], baseURL: URL?) -> [MarkdownLinkInfo] {

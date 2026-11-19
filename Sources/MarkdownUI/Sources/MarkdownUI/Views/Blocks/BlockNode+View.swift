@@ -52,27 +52,28 @@ extension BlockNode: View {
     }
   }
 
-  private func isHTMLTable(_ html: String) -> Bool {
+  // BlockCountLimit 이 뷰와 같은 기준으로 HTML 블록을 세려고 아래 판정 함수와 항목 추출에서 private를 뺐다.
+  func isHTMLTable(_ html: String) -> Bool {
     html.lowercased().contains("<table")
   }
 
-  private func isHTMLList(_ html: String) -> Bool {
+  func isHTMLList(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<ul") || lowered.contains("<ol")
   }
 
-  private func isHTMLHeading(_ html: String) -> Bool {
+  func isHTMLHeading(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<h1") || lowered.contains("<h2") || lowered.contains("<h3") ||
            lowered.contains("<h4") || lowered.contains("<h5") || lowered.contains("<h6")
   }
 
-  private func isHTMLCode(_ html: String) -> Bool {
+  func isHTMLCode(_ html: String) -> Bool {
     let lowered = html.lowercased()
     return lowered.contains("<pre") || lowered.contains("<code")
   }
 
-  private func isHTMLBlockquote(_ html: String) -> Bool {
+  func isHTMLBlockquote(_ html: String) -> Bool {
     html.lowercased().contains("<blockquote")
   }
 
@@ -92,8 +93,12 @@ extension BlockNode: View {
     }
   }
 
+  func isHTMLOrderedList(_ html: String) -> Bool {
+    html.lowercased().contains("<ol")
+  }
+
   private func parseHTMLList(_ html: String) -> some View {
-    let isOrdered = html.lowercased().contains("<ol")
+    let isOrdered = isHTMLOrderedList(html)
     let items = extractListItems(from: html)
 
     if isOrdered {
@@ -216,22 +221,48 @@ extension BlockNode: View {
     }
   }
 
-  private func extractListItems(from html: String) -> [RawListItem] {
-    let itemPattern = "<li[^>]*>(.*?)</li>"
-    guard let regex = safeRegex(pattern: itemPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-      return []
-    }
-    let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
-
-    return matches.compactMap { match in
-      guard let range = Range(match.range(at: 1), in: html) else { return nil }
-      let itemContent = String(html[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+  func extractListItems(from html: String) -> [RawListItem] {
+    return Self.listItemContents(in: html).map { content in
+      let itemContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
       // li 태그의 직접적인 텍스트 내용만 추출 (중첩된 리스트 제외)
       let directText = extractDirectTextOnly(from: itemContent)
       let paragraph = BlockNode.paragraph(content: [.text(directText)])
       return RawListItem(children: [paragraph])
     }
+  }
+
+  /// `<li[^>]*>(.*?)</li>`(대소문자 무시, 줄바꿈 포함)와 같은 결과를 한 번 훑어 낸다.
+  /// 정규식은 닫는 `</li>`가 없는 `<li`마다 글 끝까지 다시 훑어, 닫히지 않은 `<li>`가 수천 개면 main이 1초 넘게 멈췄다.
+  /// 어떤 `<li` 뒤에 `>`나 `</li>`가 없으면 그 뒤의 `<li`에도 없으므로 거기서 멈춘다.
+  static func listItemContents(in html: String) -> [String] {
+    let bytes = Array(html.utf8)
+    func lower(_ byte: UInt8) -> UInt8 { byte >= 65 && byte <= 90 ? byte | 0x20 : byte }
+    func find(_ pattern: [UInt8], from start: Int) -> Int? {
+      guard pattern.count <= bytes.count else { return nil }
+      var index = start
+      while index + pattern.count <= bytes.count {
+        var matched = true
+        for offset in 0..<pattern.count where lower(bytes[index + offset]) != pattern[offset] {
+          matched = false
+          break
+        }
+        if matched { return index }
+        index += 1
+      }
+      return nil
+    }
+    let open = Array("<li".utf8)
+    let close = Array("</li>".utf8)
+    var contents: [String] = []
+    var index = 0
+    while let start = find(open, from: index),
+          let tagEnd = find([UInt8(ascii: ">")], from: start + open.count),
+          let end = find(close, from: tagEnd + 1) {
+      contents.append(String(decoding: bytes[(tagEnd + 1)..<end], as: UTF8.self))
+      index = end + close.count
+    }
+    return contents
   }
 
   private func extractHeading(from html: String) -> (level: Int, content: String) {
