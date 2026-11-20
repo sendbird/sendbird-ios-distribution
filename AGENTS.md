@@ -89,7 +89,8 @@ Dynamic linkage removes that warning. It also removes Core's self-containment, a
   | Core versions | Core zip | Leaf pods they use |
   |---|---|---|
   | 1.21.0 to 1.23.1 | leaf code absorbed statically | `SendbirdMarkdownUI` 1.1.0, `SendbirdNetworkImage` 1.0.0, `SendbirdSplash` 1.0.0 (no flag) |
-  | 1.23.2 and later | links the three leaf frameworks dynamically | `SendbirdMarkdownUI` 1.1.1, `SendbirdNetworkImage` 1.0.1, `SendbirdSplash` 1.0.1 (flag set) |
+  | 1.23.2 to 1.24.3 | links the three leaf frameworks dynamically | `SendbirdMarkdownUI` 1.1.1, `SendbirdNetworkImage` 1.0.1, `SendbirdSplash` 1.0.1 (flag set) |
+  | next release (planned 1.24.4) | links the three leaf frameworks dynamically | `SendbirdMarkdownUI` 1.1.2, `SendbirdNetworkImage` 1.0.2, `SendbirdSplash` 1.0.1 (flag set) |
 
   The `SendbirdAIAgentCore` and `SendbirdAIAgentMessenger` podspecs of 1.23.2 and later declare and pin the flagged leaf pods. `ai-agent-ios/scripts/verify_pod_core_linkage.sh` checks this during the release and stops it when a dynamic Core meets a leaf podspec without the flag.
 - `Splash.framework` is now a real image with install name `@rpath/Splash.framework/Splash` and bundle id `com.sendbird.Splash`. A consumer that also carries a `Splash.framework` from elsewhere (CocoaPods, Carthage, a manual embed, another vendor's SDK) ends up with two images claiming the same install name. While ours was an empty stub either winner worked; now, if theirs wins, Core fails to find its symbols at launch.

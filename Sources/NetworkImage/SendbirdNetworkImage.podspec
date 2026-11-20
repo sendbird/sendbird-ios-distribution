@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'SendbirdNetworkImage'
-  s.version = '1.0.1'
+  s.version = '1.0.2'
   s.summary = 'Sendbird customized NetworkImage for SwiftUI'
   s.description = 'AsyncImage before iOS 14, with cache and support for custom placeholders, customized for Sendbird'
   s.homepage = 'https://github.com/sendbird/sendbird-ios-distribution'

@@ -25,8 +25,8 @@ Pod::Spec.new do |s|
   
   # Core links these three as dynamic frameworks (@rpath), built with library evolution.
   # Messenger pulls them too, but a Core-only Podfile must not lose the dylibs.
-  s.dependency 'SendbirdMarkdownUI', '~> 1.1.1'
-  s.dependency 'SendbirdNetworkImage', '1.0.1'
+  s.dependency 'SendbirdMarkdownUI', '~> 1.1.2'
+  s.dependency 'SendbirdNetworkImage', '1.0.2'
   s.dependency 'SendbirdSplash', '1.0.1'
   
   # Download XCFramework from GitHub releases
